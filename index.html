@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Convert Google Earth KML/KMZ files to shapefiles in your browser. Nothing is uploaded.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>KML to Shapefile</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one calm column that walks top to bottom — three steps, one big drop target, then one large result card per file. */
+:root {
+  --bg: #f2f5f4;
+  --surface: #ffffff;
+  --ink: #17201f;
+  --muted: #56645f;
+  --line: #d3dcd9;
+  --accent: #0b6b62;
+  --accent-hover: #095a52;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2f0ed;
+  --pt: #c2410c;
+  --ln: #1d4ed8;
+  --pg: #0b6b62;
+  --ok: #157a3c;
+  --ok-soft: #e4f4ea;
+  --err: #b42318;
+  --err-soft: #fdecea;
+  --warn: #8a5300;
+  --f-body: "Figtree", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101615; --surface: #19211f; --ink: #e8eeec; --muted: #9aa8a4; --line: #2c3835;
+    --accent: #43bdb0; --accent-hover: #5fcfc3; --accent-ink: #0b1312; --accent-soft: #17302c;
+    --pt: #fb923c; --ln: #7ea6ff; --pg: #43bdb0; --ok: #5bd28a; --ok-soft: #15301f;
+    --err: #ff8577; --err-soft: #3a1b18; --warn: #f0b44c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101615; --surface: #19211f; --ink: #e8eeec; --muted: #9aa8a4; --line: #2c3835;
+  --accent: #43bdb0; --accent-hover: #5fcfc3; --accent-ink: #0b1312; --accent-soft: #17302c;
+  --pt: #fb923c; --ln: #7ea6ff; --pg: #43bdb0; --ok: #5bd28a; --ok-soft: #15301f;
+  --err: #ff8577; --err-soft: #3a1b18; --warn: #f0b44c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.sub { color: var(--muted); font-size: 16px; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.55; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 44px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+
+header { display: grid; gap: 10px; text-align: center; justify-items: center; }
+h1 { font-weight: 700; font-size: clamp(30px, 5vw, 40px); letter-spacing: -0.02em; line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 46ch; font-size: 18px; text-wrap: balance; }
+.lede b { color: var(--ink); font-weight: 600; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.steps li { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--muted); }
+.steps li .n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; background: var(--surface); border: 1.5px solid var(--line); color: var(--muted); }
+.steps li.on { color: var(--ink); }
+.steps li.on .n { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.steps li.done .n { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.drop { border: 2px dashed var(--line); border-radius: 16px; background: var(--surface); padding: 40px 20px; display: grid; justify-items: center; gap: 14px; text-align: center; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop .icon { width: 56px; height: 56px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.drop .icon svg { width: 30px; height: 30px; }
+.drop .or { color: var(--muted); font-size: 16px; }
+.drop .hint { color: var(--muted); font-size: 15px; max-width: 44ch; }
+.drop.compact { padding: 16px 20px; grid-auto-flow: column; justify-content: center; align-items: center; gap: 14px; }
+.drop.compact .icon, .drop.compact .hint { display: none; }
+.drop.compact .btn.big { font-size: 16px; padding: 10px 20px; min-height: 48px; width: auto; }
+@media (max-width: 560px) { .drop.compact { grid-auto-flow: row; } }
+
+.btn { font: 600 16px var(--f-body); border-radius: 10px; padding: 12px 20px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; text-decoration: none; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:focus-visible, .linkbtn:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-ink); }
+.btn.big { font-size: 18px; padding: 14px 28px; min-height: 56px; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.linkbtn { font: 500 15px var(--f-body); background: none; border: 0; padding: 6px 4px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkbtn:hover { color: var(--ink); }
+
+.banner { border-radius: 12px; padding: 14px 18px; font-size: 16px; font-weight: 500; display: flex; gap: 10px; align-items: flex-start; }
+.banner.info { background: var(--accent-soft); color: var(--ink); }
+.banner.ok { background: var(--ok-soft); color: var(--ink); }
+.banner.ok::before { content: "\2713"; color: var(--ok); font-weight: 700; }
+.banner.bad { background: var(--err-soft); color: var(--ink); }
+.banner.bad::before { content: "!"; color: var(--err); font-weight: 700; }
+
+.allbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.allbar p { margin: 0; font-weight: 600; }
+
+.results { display: grid; gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; }
+.card .map { background: var(--bg); border-bottom: 1px solid var(--line); height: 230px; display: grid; place-items: center; }
+.card .map svg { width: 100%; height: 100%; display: block; }
+.card .body { padding: 20px 22px 22px; display: grid; gap: 14px; min-width: 0; }
+.card .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.card .fname { font-family: var(--f-mono); font-weight: 500; font-size: 15px; word-break: break-all; min-width: 0; }
+.pill { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.summary { font-size: 19px; font-weight: 600; margin: 0; text-wrap: balance; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 15px; font-variant-numeric: tabular-nums; }
+.chip i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.chip.lines i { border-radius: 2px; height: 4px; width: 16px; }
+.chip.polygons i { border-radius: 3px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.card .errmsg { margin: 0; font-size: 17px; }
+.card .errmsg b { color: var(--err); }
+.card.failed .body { border-left: 4px solid var(--err); }
+
+details { border-top: 1px solid var(--line); padding-top: 12px; }
+summary { cursor: pointer; color: var(--muted); font-size: 15px; font-weight: 500; width: fit-content; }
+summary:hover { color: var(--ink); }
+.detail { display: grid; gap: 8px; margin-top: 10px; font-size: 15px; color: var(--muted); }
+.detail .files, .detail .cols { font-family: var(--f-mono); font-size: 13px; line-height: 1.8; color: var(--ink); overflow-wrap: anywhere; }
+.detail .warn { color: var(--warn); }
+
+.more { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
+.more > summary { font-size: 16px; }
+.more .opts { display: grid; gap: 14px; margin-top: 14px; }
+.opt { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 4px 12px; align-items: start; cursor: pointer; }
+.opt input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+.opt b { font-weight: 600; }
+.opt span { grid-column: 2; color: var(--muted); font-size: 15px; }
+
+footer { color: var(--muted); font-size: 15px; display: grid; gap: 12px; }
+footer h2 { font-size: 17px; color: var(--ink); margin: 0; }
+footer dl { margin: 0; display: grid; gap: 12px; }
+footer dt { color: var(--ink); font-weight: 600; }
+footer dd { margin: 2px 0 0; max-width: 66ch; }
+
+@media (max-width: 560px) {
+  .steps { grid-template-columns: 1fr; gap: 8px; }
+  .card .map { height: 190px; }
+  .btn.big { width: 100%; }
+  .allbar .btn { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>KML to Shapefile</h1>
+    <p class="lede">Turn a <b>Google Earth file</b> (.kml or .kmz) into a <b>shapefile</b> (.shp) for your mapping software.</p>
+  </header>
+
+  <ol class="steps" aria-label="How it works">
+    <li id="s1" class="on"><span class="n">1</span>Add your file</li>
+    <li id="s2"><span class="n">2</span>Check the map</li>
+    <li id="s3"><span class="n">3</span>Download</li>
+  </ol>
+
+  <section class="drop" id="drop" aria-label="Add files">
+    <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
+    <button class="btn primary big" id="pick" type="button">Choose a file</button>
+    <div class="or">or drag and drop it here</div>
+    <div class="hint">Files ending in .kml or .kmz, up to 1 MB each. You can choose more than one.</div>
+    <input id="file" type="file" accept=".kml,.kmz" multiple hidden>
+  </section>
+
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <div class="allbar" id="allbar" hidden>
+    <p id="allcount"></p>
+    <button class="btn primary" id="all" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Download all</button>
+  </div>
+
+  <section class="results" id="results" aria-label="Your files"></section>
+
+  <div style="text-align:center"><button class="linkbtn" id="clear" type="button" hidden>Start over</button></div>
+
+  <details class="more">
+    <summary>More options</summary>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="full"><b>Include the extra shapefile parts</b><span>Adds the .shx, .dbf and .prj files that hold names, descriptions and the map location system. Turn this on if ArcGIS won't open your file, or if you need the names.</span></label>
+      <label class="opt"><input type="checkbox" id="z3d"><b>Keep heights</b><span>Keeps the altitude from Google Earth (3D shapes). Most people can leave this off.</span></label>
+    </div>
+  </details>
+
+  <footer>
+    <h2>Good to know</h2>
+    <dl>
+      <div><dt>Is my file private?</dt><dd>Yes. Your file never leaves your computer and is never saved anywhere. It disappears when you click Start over or close this page.</dd></div>
+      <div><dt>Why is my download a .zip?</dt><dd id="zipfaq">Browsers can't save a .shp file on its own here, so it comes inside a .zip. Double-click the .zip to open it and you'll find your .shp files inside.</dd></div>
+      <div><dt>Why are there up to three .shp files?</dt><dd>A shapefile can hold only one kind of shape, so places (points), paths (lines) and areas (polygons) each get their own file.</dd></div>
+    </dl>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+"use strict";
+
+/* ===================== KML parsing ===================== */
+
+const GEOM_TAGS = new Set(["Point","LineString","LinearRing","Polygon","MultiGeometry","Track","MultiTrack"]);
+const kids = (el, name) => Array.from(el.children).filter(c => c.localName === name);
+const kid = (el, name) => Array.from(el.children).find(c => c.localName === name) || null;
+const textOf = (el, name) => { const c = kid(el, name); return c ? (c.textContent || "").trim() : ""; };
+
+function parseCoords(text) {
+  if (!text) return [];
+  const pts = [];
+  for (const tok of text.trim().replace(/\s*,\s*/g, ",").split(/\s+/)) {
+    const p = tok.split(",");
+    const x = parseFloat(p[0]), y = parseFloat(p[1]);
+    if (!isFinite(x) || !isFinite(y)) continue;
+    const z = p.length > 2 && p[2] !== "" ? parseFloat(p[2]) : 0;
+    pts.push([x, y, isFinite(z) ? z : 0]);
+  }
+  return pts;
+}
+
+function parseGeometry(el, out) {
+  const n = el.localName;
+  if (n === "Point") {
+    const p = parseCoords(textOf(el, "coordinates"));
+    if (p.length) out.points.push(p[0]);
+  } else if (n === "LineString" || n === "LinearRing") {
+    const p = parseCoords(textOf(el, "coordinates"));
+    if (p.length >= 2) out.lines.push(p);
+  } else if (n === "Polygon") {
+    const ob = kid(el, "outerBoundaryIs"); const lr = ob && kid(ob, "LinearRing");
+    const outer = lr ? parseCoords(textOf(lr, "coordinates")) : [];
+    if (outer.length < 3) return;
+    const rings = [outer];
+    for (const ib of kids(el, "innerBoundaryIs"))
+      for (const r of kids(ib, "LinearRing")) {
+        const pts = parseCoords(textOf(r, "coordinates"));
+        if (pts.length >= 3) rings.push(pts);
+      }
+    out.polygons.push(rings);
+  } else if (n === "MultiGeometry" || n === "MultiTrack") {
+    for (const c of el.children) parseGeometry(c, out);
+  } else if (n === "Track") {
+    const pts = [];
+    for (const c of el.children) if (c.localName === "coord") {
+      const p = (c.textContent || "").trim().split(/\s+/).map(Number);
+      if (isFinite(p[0]) && isFinite(p[1])) pts.push([p[0], p[1], isFinite(p[2]) ? p[2] : 0]);
+    }
+    if (pts.length >= 2) out.lines.push(pts); else if (pts.length === 1) out.points.push(pts[0]);
+  }
+}
+
+function extendedData(pm) {
+  const attrs = {}; const ed = kid(pm, "ExtendedData"); if (!ed) return attrs;
+  for (const d of kids(ed, "Data")) { const k = d.getAttribute("name"); if (k) attrs[k] = textOf(d, "value"); }
+  for (const sd of kids(ed, "SchemaData")) for (const s of kids(sd, "SimpleData")) {
+    const k = s.getAttribute("name"); if (k) attrs[k] = (s.textContent || "").trim();
+  }
+  return attrs;
+}
+
+function* placemarks(el, path) {
+  for (const c of el.children) {
+    const t = c.localName;
+    if (t === "Placemark") yield [c, path.join("/")];
+    else if (t === "Folder") { const nm = textOf(c, "name"); yield* placemarks(c, nm ? [...path, nm] : path); }
+    else if (t === "Document" || t === "kml") yield* placemarks(c, path);
+  }
+}
+
+function parseKml(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("unreadable");
+  const root = doc.documentElement;
+  const iter = root.localName === "Placemark" ? [[root, ""]] : placemarks({ children: [root] }, []);
+  const features = [];
+  for (const [pm, folder] of iter) {
+    const geom = { points: [], lines: [], polygons: [] };
+    for (const c of pm.children) if (GEOM_TAGS.has(c.localName)) parseGeometry(c, geom);
+    const attrs = { name: textOf(pm, "name"), descr: textOf(pm, "description"), folder };
+    for (const [k, v] of Object.entries(extendedData(pm))) if (!(k in attrs)) attrs[k] = v;
+    features.push({ geom, attrs });
+  }
+  return features;
+}
+
+async function readKmlText(file) {
+  const buf = await file.arrayBuffer();
+  const head = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
+  const isZip = head[0] === 0x50 && head[1] === 0x4b;
+  if (!isZip) return new TextDecoder("utf-8").decode(buf);
+  const zip = await JSZip.loadAsync(buf);
+  const names = Object.keys(zip.files).filter(n => !zip.files[n].dir && n.toLowerCase().endsWith(".kml"));
+  if (!names.length) throw new Error("emptykmz");
+  names.sort((a, b) => {
+    const da = a.split("/").pop().toLowerCase() === "doc.kml" ? 0 : 1, db = b.split("/").pop().toLowerCase() === "doc.kml" ? 0 : 1;
+    return da - db || a.split("/").length - b.split("/").length || a.localeCompare(b);
+  });
+  return zip.file(names[0]).async("string");
+}
+
+/* ===================== Geometry helpers ===================== */
+
+function signedArea(r) { let a = 0; for (let i = 0; i < r.length - 1; i++) a += r[i][0] * r[i+1][1] - r[i+1][0] * r[i][1]; return a / 2; }
+function orient(ring, clockwise) {
+  let r = ring.slice();
+  const f = r[0], l = r[r.length - 1];
+  if (f[0] !== l[0] || f[1] !== l[1]) r.push(f);
+  const isCw = signedArea(r) < 0;
+  return isCw === clockwise ? r : r.reverse();
+}
+
+/* ===================== Shapefile writing ===================== */
+
+const T = { NULL: 0, POINT: 1, LINE: 3, POLY: 5, POINTZ: 11, LINEZ: 13, POLYZ: 15 };
+const WGS84_PRJ = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+
+function bboxOf(pts) {
+  let b = [Infinity, Infinity, -Infinity, -Infinity, Infinity, -Infinity];
+  for (const p of pts) { b[0] = Math.min(b[0], p[0]); b[1] = Math.min(b[1], p[1]); b[2] = Math.max(b[2], p[0]); b[3] = Math.max(b[3], p[1]); b[4] = Math.min(b[4], p[2]); b[5] = Math.max(b[5], p[2]); }
+  return pts.length ? b : [0,0,0,0,0,0];
+}
+
+function encodeRecord(type, g) {
+  if (type === T.POINT) { const dv = new DataView(new ArrayBuffer(20)); dv.setInt32(0, type, true); dv.setFloat64(4, g[0], true); dv.setFloat64(12, g[1], true); return dv.buffer; }
+  if (type === T.POINTZ) { const dv = new DataView(new ArrayBuffer(36)); dv.setInt32(0, type, true); dv.setFloat64(4, g[0], true); dv.setFloat64(12, g[1], true); dv.setFloat64(20, g[2], true); dv.setFloat64(28, 0, true); return dv.buffer; }
+  const parts = g, pts = parts.flat(), n = pts.length, np = parts.length;
+  const isZ = type === T.LINEZ || type === T.POLYZ;
+  const size = 44 + 4 * np + 16 * n + (isZ ? 32 + 16 * n : 0);
+  const dv = new DataView(new ArrayBuffer(size)); const b = bboxOf(pts);
+  let o = 0;
+  dv.setInt32(o, type, true); o += 4;
+  for (let i = 0; i < 4; i++) { dv.setFloat64(o, b[i], true); o += 8; }
+  dv.setInt32(o, np, true); o += 4; dv.setInt32(o, n, true); o += 4;
+  let idx = 0; for (const p of parts) { dv.setInt32(o, idx, true); o += 4; idx += p.length; }
+  for (const p of pts) { dv.setFloat64(o, p[0], true); dv.setFloat64(o + 8, p[1], true); o += 16; }
+  if (isZ) {
+    dv.setFloat64(o, b[4], true); dv.setFloat64(o + 8, b[5], true); o += 16;
+    for (const p of pts) { dv.setFloat64(o, p[2], true); o += 8; }
+    o += 16 + 8 * n; // M range + M values left at 0
+  }
+  return dv.buffer;
+}
+
+function fileHeader(type, lengthBytes, b) {
+  const dv = new DataView(new ArrayBuffer(100));
+  dv.setInt32(0, 9994, false); dv.setInt32(24, lengthBytes / 2, false);
+  dv.setInt32(28, 1000, true); dv.setInt32(32, type, true);
+  [b[0], b[1], b[2], b[3], b[4], b[5], 0, 0].forEach((v, i) => dv.setFloat64(36 + i * 8, v, true));
+  return new Uint8Array(dv.buffer);
+}
+
+const enc = new TextEncoder();
+function truncUtf8(s, limit) {
+  let b = enc.encode(s);
+  if (b.length <= limit) return b;
+  let cut = limit; while (cut > 0 && (b[cut] & 0xc0) === 0x80) cut--;
+  return b.slice(0, cut);
+}
+
+function fieldNames(keys) {
+  const used = new Set(), map = {};
+  for (const k of keys) {
+    let base = k.replace(/[^A-Za-z0-9_]/g, "_").replace(/^_+|_+$/g, "") || "field";
+    if (/^\d/.test(base)) base = "f_" + base;
+    base = base.slice(0, 10);
+    let name = base, i = 1;
+    while (used.has(name.toUpperCase())) { const s = String(i++); name = base.slice(0, 10 - s.length) + s; }
+    used.add(name.toUpperCase()); map[k] = name;
+  }
+  return map;
+}
+
+function writeDbf(keys, rows) {
+  const names = fieldNames(keys);
+  let truncated = 0;
+  const cells = rows.map(r => keys.map(k => {
+    const raw = String(r[k] ?? "").replace(/[\r\n]+/g, " ");
+    const b = truncUtf8(raw, 254); if (b.length < enc.encode(raw).length) truncated++;
+    return b;
+  }));
+  const widths = keys.map((_, j) => Math.max(1, ...cells.map(c => c[j].length)));
+  const recLen = 1 + widths.reduce((a, b) => a + b, 0), hdrLen = 32 + 32 * keys.length + 1;
+  const buf = new Uint8Array(hdrLen + recLen * rows.length + 1);
+  const dv = new DataView(buf.buffer); const now = new Date();
+  buf[0] = 0x03; buf[1] = now.getFullYear() - 1900; buf[2] = now.getMonth() + 1; buf[3] = now.getDate();
+  dv.setUint32(4, rows.length, true); dv.setUint16(8, hdrLen, true); dv.setUint16(10, recLen, true);
+  keys.forEach((k, j) => {
+    const o = 32 + 32 * j; const nm = enc.encode(names[k]);
+    buf.set(nm, o); buf[o + 11] = 67; buf[o + 16] = widths[j];
+  });
+  buf[hdrLen - 1] = 0x0d;
+  let o = hdrLen;
+  for (const row of cells) {
+    buf[o++] = 0x20;
+    row.forEach((b, j) => { buf.fill(0x20, o, o + widths[j]); buf.set(b, o); o += widths[j]; });
+  }
+  buf[o] = 0x1a;
+  return { bytes: buf, names, truncated };
+}
+
+function writeShapefile(type, records, keys) {
+  const contents = records.map(([g]) => new Uint8Array(encodeRecord(type, g)));
+  const all = [];
+  for (const [g] of records) { if (type === T.POINT || type === T.POINTZ) all.push(g); else for (const p of g) all.push(...p); }
+  const b = bboxOf(all);
+  const shpLen = 100 + contents.reduce((a, c) => a + 8 + c.length, 0), shxLen = 100 + 8 * contents.length;
+  const shp = new Uint8Array(shpLen), shx = new Uint8Array(shxLen);
+  shp.set(fileHeader(type, shpLen, b)); shx.set(fileHeader(type, shxLen, b));
+  const sdv = new DataView(shp.buffer), xdv = new DataView(shx.buffer);
+  let off = 100;
+  contents.forEach((c, i) => {
+    sdv.setInt32(off, i + 1, false); sdv.setInt32(off + 4, c.length / 2, false); shp.set(c, off + 8);
+    xdv.setInt32(100 + 8 * i, off / 2, false); xdv.setInt32(104 + 8 * i, c.length / 2, false);
+    off += 8 + c.length;
+  });
+  const dbf = writeDbf(keys, records.map(([, a]) => a));
+  return { shp, shx, dbf: dbf.bytes, names: dbf.names, truncated: dbf.truncated };
+}
+
+function orderedKeys(rows) {
+  const keys = ["name", "descr", "folder"], seen = new Set(keys);
+  for (const r of rows) for (const k of Object.keys(r)) if (!seen.has(k)) { seen.add(k); keys.push(k); }
+  return keys;
+}
+
+function convertFeatures(features, stem, useZ) {
+  const points = [], lines = [], polys = [];
+  for (const { geom: g, attrs: a } of features) {
+    for (const p of g.points) points.push([p, a]);
+    if (g.lines.length) lines.push([g.lines, a]);
+    if (g.polygons.length) {
+      const parts = [];
+      for (const rings of g.polygons) { parts.push(orient(rings[0], true)); for (const r of rings.slice(1)) parts.push(orient(r, false)); }
+      polys.push([parts, a]);
+    }
+  }
+  const layers = [];
+  for (const [kind, recs, t2, t3] of [["points", points, T.POINT, T.POINTZ], ["lines", lines, T.LINE, T.LINEZ], ["polygons", polys, T.POLY, T.POLYZ]]) {
+    if (!recs.length) continue;
+    const keys = orderedKeys(recs.map(r => r[1]));
+    const out = writeShapefile(useZ ? t3 : t2, recs, keys);
+    layers.push({ kind, base: `${stem}_${kind}`, count: recs.length, keys, ...out, geoms: recs.map(r => r[0]) });
+  }
+  return layers;
+}
+
+function addToZip(zip, layers) {
+  const full = document.getElementById("full").checked;
+  for (const L of layers) {
+    zip.file(L.base + ".shp", L.shp);
+    if (full) {
+      zip.file(L.base + ".shx", L.shx); zip.file(L.base + ".dbf", L.dbf);
+      zip.file(L.base + ".prj", WGS84_PRJ); zip.file(L.base + ".cpg", "UTF-8");
+    }
+  }
+}
+
+/* ===================== Map preview ===================== */
+
+const SVGNS = "http://www.w3.org/2000/svg";
+function preview(layers) {
+  const pts = [];
+  for (const L of layers) for (const g of L.geoms) { if (L.kind === "points") pts.push(g); else for (const p of g) pts.push(...p); }
+  if (!pts.length) return null;
+  let [x0, y0, x1, y1] = bboxOf(pts);
+  const k = Math.cos(((y0 + y1) / 2) * Math.PI / 180) || 1;
+  const W = 700, H = 230, pad = 24;
+  const w = Math.max((x1 - x0) * k, 1e-9), h = Math.max(y1 - y0, 1e-9);
+  const s = Math.min((W - 2 * pad) / w, (H - 2 * pad) / h);
+  const ox = (W - w * s) / 2, oy = (H - h * s) / 2;
+  const P = p => [(ox + (p[0] - x0) * k * s).toFixed(1), (H - oy - (p[1] - y0) * s).toFixed(1)];
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "Map preview of the shapes in this file");
+  const add = (tag, attrs) => { const e = document.createElementNS(SVGNS, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); svg.appendChild(e); };
+  for (const kind of ["polygons", "lines", "points"]) for (const L of layers.filter(l => l.kind === kind)) for (const g of L.geoms) {
+    if (kind === "polygons") add("path", { d: g.map(r => "M" + r.map(p => P(p).join(",")).join("L") + "Z").join(""), fill: "var(--pg)", "fill-opacity": ".2", stroke: "var(--pg)", "stroke-width": "2", "fill-rule": "evenodd", "stroke-linejoin": "round" });
+    else if (kind === "lines") for (const part of g) add("polyline", { points: part.map(p => P(p).join(",")).join(" "), fill: "none", stroke: "var(--ln)", "stroke-width": "2.5", "stroke-linejoin": "round", "stroke-linecap": "round" });
+    else { const [cx, cy] = P(g); add("circle", { cx, cy, r: "6", fill: "var(--pt)", stroke: "var(--surface)", "stroke-width": "2" }); }
+  }
+  return svg;
+}
+
+/* ===================== UI ===================== */
+
+const $ = id => document.getElementById(id);
+const results = $("results"), statusEl = $("status");
+const items = [];
+const MAX_BYTES = 1024 * 1024;
+const fmtSize = b => b >= 1024 * 1024 ? (Math.ceil(b / 104857.6) / 10).toFixed(1) + " MB" : Math.ceil(b / 1024) + " KB";
+const KIND = {
+  points:   { word: ["place", "places"], label: "Places", sub: "points" },
+  lines:    { word: ["path", "paths"],   label: "Paths",  sub: "lines" },
+  polygons: { word: ["area", "areas"],   label: "Areas",  sub: "polygons" },
+};
+const plural = (n, [one, many]) => `${n} ${n === 1 ? one : many}`;
+let downloads = null;
+
+(async () => { try { if (window.claude?.use) downloads = await window.claude.use("downloads"); } catch (_) {} })();
+
+function say(msg, kind = "info") {
+  statusEl.textContent = "";
+  if (!msg) return;
+  const b = document.createElement("div"); b.className = "banner " + kind; b.textContent = msg; statusEl.appendChild(b);
+}
+
+function setStep(n) {
+  [1, 2, 3].forEach(i => {
+    const li = $("s" + i); li.classList.toggle("on", i === n); li.classList.toggle("done", i < n);
+  });
+}
+
+// Outside Claude (e.g. GitHub Pages) the browser can save a bare .shp, so a
+// single-layer, .shp-only download skips the zip.
+const HOSTED_ON_CLAUDE = !!window.claude;
+function downloadLayers(layers, stem) {
+  if (!HOSTED_ON_CLAUDE && layers.length === 1 && !$("full").checked) {
+    const L = layers[0];
+    return saveBlob(L.base + ".shp", new Blob([L.shp], { type: "application/octet-stream" }));
+  }
+  const z = new JSZip(); addToZip(z, layers); return saveZip(`${stem}_shapefile.zip`, z);
+}
+
+async function saveZip(filename, zip) {
+  return saveBlob(filename, await zip.generateAsync({ type: "blob", compression: "DEFLATE" }));
+}
+
+async function saveBlob(filename, blob) {
+  if (downloads) {
+    try {
+      await downloads.save({ filename, data: blob });
+      setStep(3);
+      say(`Done! "${filename}" is in your Downloads folder. Double-click it to open it.`, "ok");
+    } catch (e) {
+      const c = e?.code;
+      if (c === "declined") say("The download was cancelled. Click Download again whenever you're ready.");
+      else if (c === "rate_limited") say("A download box is already open. Finish that one first, then try again.", "bad");
+      else say("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad");
+    }
+    return;
+  }
+  if (window.claude) { say("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad"); return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  setStep(3); say(`Done! "${filename}" is in your Downloads folder.${filename.endsWith(".zip") ? " Double-click it to open it." : ""}`, "ok");
+}
+
+function uniqueStem(stem) {
+  const taken = new Set(items.map(i => i.stem)); let s = stem, n = 2;
+  while (taken.has(s)) s = `${stem}_${n++}`;
+  return s;
+}
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const DL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>';
+
+function friendlyError(code, file) {
+  if (code === "toobig") return [`This file is too big (${fmtSize(file.size)}).`, " The limit is 1 MB. Try splitting it into smaller files in Google Earth."];
+  if (code === "notkml") return ["This isn't a Google Earth file.", " Choose a file whose name ends in .kml or .kmz."];
+  if (code === "emptykmz") return ["This .kmz file has nothing to convert inside it.", " Try saving it again from Google Earth."];
+  return ["We couldn't read this file.", " It may be damaged. Try saving it again from Google Earth, then add it here."];
+}
+
+function renderCard(it) {
+  const card = el("article", "card");
+  if (it.error) {
+    card.classList.add("failed");
+    const body = el("div", "body");
+    const top = el("div", "top"); top.appendChild(el("span", "fname", it.filename)); body.appendChild(top);
+    const p = el("p", "errmsg"); const [a, b] = it.error; p.appendChild(el("b", null, a)); p.appendChild(document.createTextNode(b)); body.appendChild(p);
+    const actions = el("div", "actions"); const rm = el("button", "linkbtn", "Remove"); rm.type = "button";
+    rm.addEventListener("click", () => removeItem(it)); actions.appendChild(rm); body.appendChild(actions);
+    card.appendChild(body); return card;
+  }
+
+  const layers = it.layers;
+  const map = el("div", "map"); const svg = preview(layers);
+  if (svg) map.appendChild(svg); else map.appendChild(el("div", "sub", "Nothing to show on a map"));
+  card.appendChild(map);
+
+  const body = el("div", "body"); card.appendChild(body);
+  const top = el("div", "top");
+  top.appendChild(el("span", "fname", it.filename));
+  if (it.example) top.appendChild(el("span", "pill", "Example"));
+  body.appendChild(top);
+
+  if (!layers.length) {
+    body.appendChild(el("p", "summary", "We didn't find any places, paths or areas in this file."));
+    body.appendChild(el("div", "sub", "There's nothing to convert. Check that you picked the right file."));
+  } else {
+    const found = layers.map(L => plural(L.count, KIND[L.kind].word));
+    const sentence = found.length > 1 ? found.slice(0, -1).join(", ") + " and " + found.at(-1) : found[0];
+    body.appendChild(el("p", "summary", `We found ${sentence}.`));
+    const chips = el("div", "chips");
+    for (const L of layers) {
+      const c = el("span", "chip " + L.kind); const i = el("i"); i.style.background = `var(--${L.kind === "points" ? "pt" : L.kind === "lines" ? "ln" : "pg"})`;
+      c.appendChild(i); c.appendChild(document.createTextNode(`${KIND[L.kind].label}: ${L.count}`)); chips.appendChild(c);
+    }
+    body.appendChild(chips);
+  }
+
+  const actions = el("div", "actions");
+  if (layers.length) {
+    const dl = el("button", "btn primary big"); dl.type = "button"; dl.innerHTML = DL_ICON; dl.appendChild(document.createTextNode("Download shapefile"));
+    dl.addEventListener("click", () => downloadLayers(layers, it.stem));
+    actions.appendChild(dl);
+  }
+  const rm = el("button", "linkbtn", it.example ? "Hide example" : "Remove"); rm.type = "button";
+  rm.addEventListener("click", () => removeItem(it)); actions.appendChild(rm);
+  body.appendChild(actions);
+
+  if (layers.length) {
+    const det = el("details"); det.appendChild(el("summary", null, "Details for mapping experts"));
+    const d = el("div", "detail");
+    const full = $("full").checked;
+    d.appendChild(el("div", null, "Files in the download:"));
+    d.appendChild(el("div", "files", layers.map(L => [".shp", ...(full ? [".shx", ".dbf", ".prj", ".cpg"] : [])].map(x => L.base + x).join("  ")).join("\n")));
+    const cols = [], seen = new Set();
+    for (const L of layers) for (const k of L.keys) if (!seen.has(L.names[k])) { seen.add(L.names[k]); cols.push(L.names[k] + (L.names[k] !== k ? ` (from "${k}")` : "")); }
+    d.appendChild(el("div", null, full ? "Attribute columns in the .dbf:" : "Attribute columns (only included when \"Include the extra shapefile parts\" is on):"));
+    d.appendChild(el("div", "cols", cols.join(", ")));
+    d.appendChild(el("div", null, `Coordinate system: WGS 84 (EPSG:4326). Shape type: ${$("z3d").checked ? "3D (Z)" : "2D"}.`));
+    const trunc = layers.reduce((a, L) => a + L.truncated, 0);
+    if (trunc) d.appendChild(el("div", "warn", `${trunc} text value${trunc === 1 ? " was" : "s were"} longer than 254 bytes and got cut off (a shapefile limit).`));
+    det.appendChild(d); body.appendChild(det);
+  }
+  return card;
+}
+
+function refresh() {
+  const ok = items.filter(i => i.layers?.length && !i.example);
+  $("allbar").hidden = ok.length < 2;
+  $("allcount").textContent = `${ok.length} files ready`;
+  const hasReal = items.some(i => !i.example);
+  $("clear").hidden = !hasReal;
+  drop.classList.toggle("compact", hasReal);
+  $("pick").textContent = hasReal ? "Add another file" : "Choose a file";
+  if (!hasReal) setStep(1);
+}
+
+function removeItem(it) {
+  const i = items.indexOf(it); if (i >= 0) items.splice(i, 1);
+  it.card.remove(); refresh(); say("");
+}
+
+async function handleFiles(fileList, opts = {}) {
+  const files = Array.from(fileList);
+  if (!files.length) return;
+  if (!opts.example) for (let i = items.length - 1; i >= 0; i--) if (items[i].example) { items[i].card.remove(); items.splice(i, 1); }
+  if (!opts.example) say(`Reading ${files.length === 1 ? "your file" : files.length + " files"}…`);
+  const useZ = $("z3d").checked;
+  let ok = 0, bad = 0;
+  for (const f of files) {
+    const stem = uniqueStem(f.name.replace(/\.(kml|kmz)$/i, "").replace(/[\\/:*?"<>|]/g, "_") || "layer");
+    const it = { filename: f.name, stem, example: !!opts.example };
+    try {
+      if (!opts.example && !/\.(kml|kmz)$/i.test(f.name)) throw new Error("notkml");
+      if (!opts.example && f.size > MAX_BYTES) throw new Error("toobig");
+      it.features = parseKml(await readKmlText(f));
+      it.layers = convertFeatures(it.features, stem, useZ);
+      ok++;
+    } catch (e) {
+      it.error = friendlyError(e.message, f); bad++;
+    }
+    it.card = renderCard(it);
+    results.appendChild(it.card); items.push(it);
+  }
+  refresh();
+  if (opts.example) { say("Here's an example so you can see how it works. Add your own file above to get started."); return; }
+  if (ok) setStep(2);
+  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below, then click Download shapefile." : `All ${ok} files are ready. Check each map, then download them one by one or all at once.`, "ok");
+  else if (ok) say(`${ok} file${ok === 1 ? " is" : "s are"} ready, but ${bad} couldn't be converted. See the message${bad === 1 ? "" : "s"} below.`, "bad");
+  else say(files.length === 1 ? "That file couldn't be converted. See the message below." : "None of those files could be converted. See the messages below.", "bad");
+  results.firstElementChild?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+}
+
+const drop = $("drop"), input = $("file");
+$("pick").addEventListener("click", () => input.click());
+input.addEventListener("change", () => { if (input.files.length) handleFiles(input.files); input.value = ""; });
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { if (e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files); });
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => { e.preventDefault(); if (e.target.closest && !e.target.closest("#drop") && e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files); });
+
+$("clear").addEventListener("click", () => { items.length = 0; results.textContent = ""; refresh(); say("Everything has been cleared. Add a new file whenever you're ready."); });
+
+$("all").addEventListener("click", () => {
+  const zip = new JSZip();
+  for (const i of items) if (i.layers?.length && !i.example) addToZip(zip, i.layers);
+  saveZip("shapefiles.zip", zip);
+});
+
+function rerender() {
+  const useZ = $("z3d").checked;
+  for (const i of items) {
+    if (!i.features) continue;
+    i.layers = convertFeatures(i.features, i.stem, useZ);
+    const card = renderCard(i); i.card.replaceWith(card); i.card = card;
+  }
+}
+$("z3d").addEventListener("change", rerender);
+$("full").addEventListener("change", rerender);
+
+if (!HOSTED_ON_CLAUDE) $("zipfaq").textContent = "If your file has only one kind of shape, you get a single .shp file. If it has several kinds, or you download several files at once, they come together in a .zip. Double-click the .zip to open it and you'll find your .shp files inside.";
+
+/* ===================== Example ===================== */
+
+const SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Field survey</name>
+<Folder><name>Survey points</name>
+<Placemark><name>Benchmark BM-12</name><description>Brass disk in concrete</description><ExtendedData><Data name="Elevation (ft)"><value>5281</value></Data><Data name="Surveyed by"><value>Crew A</value></Data></ExtendedData><Point><coordinates>-105.0012,39.7398,1609</coordinates></Point></Placemark>
+<Placemark><name>Well W-3</name><ExtendedData><Data name="Elevation (ft)"><value>5276</value></Data><Data name="Surveyed by"><value>Crew B</value></Data></ExtendedData><Point><coordinates>-104.9958,39.7372,1608</coordinates></Point></Placemark>
+<Placemark><name>Hydrant H-41</name><Point><coordinates>-104.9931,39.7416,1610</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Access routes</name>
+<Placemark><name>North access road</name><LineString><coordinates>-105.0035,39.7431 -105.0004,39.7419 -104.9979,39.7423 -104.9940,39.7408 -104.9905,39.7410</coordinates></LineString></Placemark>
+<Placemark><name>Service trail</name><LineString><coordinates>-105.0021,39.7355 -104.9990,39.7364 -104.9962,39.7359</coordinates></LineString></Placemark>
+</Folder>
+<Folder><name>Parcels</name>
+<Placemark><name>Parcel 0417</name><ExtendedData><Data name="Zoning"><value>R-2</value></Data><Data name="Area (acres)"><value>14.6</value></Data></ExtendedData>
+<Polygon><outerBoundaryIs><LinearRing><coordinates>-105.0010,39.7365 -104.9950,39.7365 -104.9945,39.7402 -105.0008,39.7406 -105.0010,39.7365</coordinates></LinearRing></outerBoundaryIs>
+<innerBoundaryIs><LinearRing><coordinates>-104.9990,39.7378 -104.9972,39.7378 -104.9972,39.7390 -104.9990,39.7390 -104.9990,39.7378</coordinates></LinearRing></innerBoundaryIs></Polygon></Placemark>
+</Folder></Document></kml>`;
+
+handleFiles([new File([SAMPLE], "example-field-survey.kml", { type: "application/vnd.google-earth.kml+xml" })], { example: true });
+</script>
+
+</body>
+</html>
