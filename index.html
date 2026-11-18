@@ -104,7 +104,13 @@ h1 { font-weight: 700; font-size: clamp(30px, 5vw, 40px); letter-spacing: -0.02e
 .dl { display: grid; gap: 14px; }
 .dlwhat { margin: 0; font-size: 17px; }
 .results .only { display: none; }
-.results.multi .only { display: inline; }
+.results.multi.confirmed .only { display: inline; }
+.step.locked { opacity: .4; filter: grayscale(1); user-select: none; }
+.step.locked .stephead .n { background: var(--line); color: var(--muted); }
+.step { transition: opacity .25s ease, filter .25s ease; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.confirm .btn.done { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.confirm .sub { color: var(--muted); font-size: 15px; }
 
 .results { display: grid; gap: 20px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 300px; }
@@ -201,23 +207,28 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
 
   <div id="status" role="status" aria-live="polite"></div>
 
-  <section class="step" id="step2" aria-labelledby="h2" hidden>
+  <section class="step locked" id="step2" aria-labelledby="h2" inert>
     <h2 class="stephead" id="h2"><span class="n">2</span>Check the map</h2>
-    <p class="stepnote">Make sure the shapes are where you expect them.</p>
+    <p class="stepnote" id="note2" data-open="Make sure the shapes are where you expect them, then click the button below." data-locked="Add a file in step 1 to see it here. Below is an example of what you'll see."></p>
     <div class="results" id="results"></div>
+    <div class="confirm" id="confirmrow">
+      <button class="btn primary" id="confirm" type="button">Yes, the map looks right</button>
+      <span class="sub" id="confirmsub"></span>
+    </div>
   </section>
 
-  <section class="step" id="step3" aria-labelledby="h3" hidden>
+  <section class="step locked" id="step3" aria-labelledby="h3" inert>
     <h2 class="stephead" id="h3"><span class="n">3</span>Choose options</h2>
-    <p class="stepnote">Most people can leave both of these off.</p>
+    <p class="stepnote" id="note3" data-open="Most people can leave both of these off." data-locked="Check the map in step 2 first."></p>
     <div class="panel opts">
       <label class="opt"><input type="checkbox" id="full"><b>Include the extra shapefile parts</b><span>Adds the .shx, .dbf and .prj files that hold names, descriptions and the map location system. Turn this on if ArcGIS won't open your file, or if you need the names.</span></label>
       <label class="opt"><input type="checkbox" id="z3d"><b>Keep heights</b><span>Keeps the altitude from Google Earth (3D shapes).</span></label>
     </div>
   </section>
 
-  <section class="step" id="step4" aria-labelledby="h4" hidden>
+  <section class="step locked" id="step4" aria-labelledby="h4" inert>
     <h2 class="stephead" id="h4"><span class="n">4</span>Download</h2>
+    <p class="stepnote" id="note4" data-open="Click the button to save it to your computer." data-locked="Check the map in step 2 first."></p>
     <div class="panel dl">
       <p class="dlwhat" id="dlwhat"></p>
       <div class="actions">
@@ -568,6 +579,7 @@ function drawMap(map, layers, W, H) {
 const $ = id => document.getElementById(id);
 const results = $("results"), statusEl = $("status");
 const items = [];
+let confirmed = false;
 const MAX_BYTES = 1024 * 1024;
 const fmtSize = b => b >= 1024 * 1024 ? (Math.ceil(b / 104857.6) / 10).toFixed(1) + " MB" : Math.ceil(b / 1024) + " KB";
 const KIND = {
@@ -718,8 +730,7 @@ function renderCard(it) {
 // What step 4 downloads: the user's converted files, or the example if that's all there is.
 function targets() {
   const ready = items.filter(i => i.layers?.length);
-  const real = ready.filter(i => !i.example);
-  return real.length ? real : ready;
+  return ready.filter(i => !i.example);
 }
 
 function updateDownload() {
@@ -727,10 +738,9 @@ function updateDownload() {
   const nShp = t.reduce((a, i) => a + i.layers.length, 0);
   const bare = !HOSTED_ON_CLAUDE && t.length === 1 && nShp === 1 && !full;
   const what = `${nShp} ${full ? (nShp === 1 ? "shapefile with all its parts" : "shapefiles with all their parts") : ".shp file" + (nShp === 1 ? "" : "s")}`;
-  $("dlwhat").textContent = !t.length ? "There's nothing to download yet. Add a file in step 1."
+  $("dlwhat").textContent = !t.length ? "Nothing to download yet."
     : bare ? "You'll get 1 .shp file."
     : `You'll get a .zip with ${what}${t.length > 1 ? ` from your ${t.length} files` : ""}.`;
-  if (t.length && t[0].example) $("dlwhat").textContent += " This is the example file.";
   $("alllabel").textContent = t.length > 1 ? `Download all ${t.length} files` : "Download shapefile";
   $("all").disabled = !t.length;
 }
@@ -738,13 +748,29 @@ function updateDownload() {
 function refresh() {
   const real = items.filter(i => i.layers?.length && !i.example);
   results.classList.toggle("multi", real.length > 1);
-  ["step2", "step3", "step4"].forEach(id => $(id).hidden = !items.length);
-  updateDownload();
   const hasReal = items.some(i => !i.example);
+  if (!real.length) confirmed = false;
+  results.classList.toggle("confirmed", confirmed);
+  lockStep(2, !hasReal); lockStep(3, !confirmed); lockStep(4, !confirmed);
+  $("confirmrow").hidden = !hasReal;
+  const c = $("confirm");
+  c.disabled = !real.length || confirmed;
+  c.classList.toggle("done", confirmed);
+  c.textContent = confirmed ? "\u2713 Map checked" : "Yes, the map looks right";
+  $("confirmsub").textContent = !real.length ? "Add a file that works to continue." : confirmed ? "Now pick your options and download below." : "This unlocks steps 3 and 4.";
+  updateDownload();
   $("clear").hidden = !hasReal;
   drop.classList.toggle("compact", hasReal);
   $("pick").textContent = hasReal ? "Add another file" : "Choose a file";
-  if (!hasReal) setStep(1);
+  setStep(!hasReal ? 1 : !confirmed ? 2 : 3);
+}
+
+function lockStep(n, locked) {
+  const sec = $("step" + n), note = $("note" + n);
+  sec.classList.toggle("locked", locked);
+  sec.inert = locked;
+  sec.setAttribute("aria-disabled", locked ? "true" : "false");
+  note.textContent = note.dataset[locked ? "locked" : "open"];
 }
 
 function removeItem(it) {
@@ -756,6 +782,7 @@ async function handleFiles(fileList, opts = {}) {
   const files = Array.from(fileList);
   if (!files.length) return;
   if (!opts.example) for (let i = items.length - 1; i >= 0; i--) if (items[i].example) { items[i].card.remove(); items.splice(i, 1); }
+  if (!opts.example) confirmed = false;
   if (!opts.example) say(`Reading ${files.length === 1 ? "your file" : files.length + " files"}…`);
   const useZ = $("z3d").checked;
   let ok = 0, bad = 0;
@@ -776,8 +803,7 @@ async function handleFiles(fileList, opts = {}) {
   }
   refresh();
   if (opts.example) { say("Here's an example so you can see how it works. Add your own file above to get started."); return; }
-  if (ok) setStep(2);
-  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below, then download it in step 4." : `All ${ok} files are ready. Check each map below, then download them all in step 4.`, "ok");
+  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below, then click \u201cYes, the map looks right\u201d." : `All ${ok} files are ready. Check each map below, then click \u201cYes, the map looks right\u201d.`, "ok");
   else if (ok) say(`${ok} file${ok === 1 ? " is" : "s are"} ready, but ${bad} couldn't be converted. See the message${bad === 1 ? "" : "s"} below.`, "bad");
   else say(files.length === 1 ? "That file couldn't be converted. See the message below." : "None of those files could be converted. See the messages below.", "bad");
   results.firstElementChild?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
@@ -792,7 +818,12 @@ drop.addEventListener("drop", e => { if (e.dataTransfer?.files?.length) handleFi
 document.addEventListener("dragover", e => e.preventDefault());
 document.addEventListener("drop", e => { e.preventDefault(); if (e.target.closest && !e.target.closest("#drop") && e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files); });
 
-$("clear").addEventListener("click", () => { items.length = 0; results.textContent = ""; refresh(); say("Everything has been cleared. Add a new file whenever you're ready."); });
+$("confirm").addEventListener("click", () => {
+  confirmed = true; refresh(); say("");
+  $("step3").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+});
+
+$("clear").addEventListener("click", () => { items.length = 0; confirmed = false; results.textContent = ""; refresh(); say("Everything has been cleared. Add a new file whenever you're ready."); });
 
 $("all").addEventListener("click", () => {
   const t = targets(); if (!t.length) return;
@@ -809,8 +840,7 @@ function rerender() {
     i.layers = convertFeatures(i.features, i.stem, useZ);
     const card = renderCard(i); i.card.replaceWith(card); i.card = card;
   }
-  updateDownload();
-  if (items.some(i => !i.example)) setStep(3);
+  refresh();
 }
 $("z3d").addEventListener("change", rerender);
 $("full").addEventListener("change", rerender);
