@@ -61,7 +61,7 @@ h1 { font-weight: 700; font-size: clamp(30px, 5vw, 40px); letter-spacing: -0.02e
 .lede { color: var(--muted); margin: 0; max-width: 46ch; font-size: 18px; text-wrap: balance; }
 .lede b { color: var(--ink); font-weight: 600; }
 
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .steps li { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--muted); }
 .steps li .n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; background: var(--surface); border: 1.5px solid var(--line); color: var(--muted); }
 .steps li.on { color: var(--ink); }
@@ -96,8 +96,15 @@ h1 { font-weight: 700; font-size: clamp(30px, 5vw, 40px); letter-spacing: -0.02e
 .banner.bad { background: var(--err-soft); color: var(--ink); }
 .banner.bad::before { content: "!"; color: var(--err); font-weight: 700; }
 
-.allbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
-.allbar p { margin: 0; font-weight: 600; }
+.step { display: grid; gap: 12px; }
+.stephead { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+.stephead .n { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--accent); color: var(--accent-ink); }
+.stepnote { margin: -6px 0 0 44px; color: var(--muted); font-size: 15px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.dl { display: grid; gap: 14px; }
+.dlwhat { margin: 0; font-size: 17px; }
+.results .only { display: none; }
+.results.multi .only { display: inline; }
 
 .results { display: grid; gap: 20px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 300px; }
@@ -135,9 +142,7 @@ summary:hover { color: var(--ink); }
 .detail .files, .detail .cols { font-family: var(--f-mono); font-size: 13px; line-height: 1.8; color: var(--ink); overflow-wrap: anywhere; }
 .detail .warn { color: var(--warn); }
 
-.more { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
-.more > summary { font-size: 16px; }
-.more .opts { display: grid; gap: 14px; margin-top: 14px; }
+.opts { display: grid; gap: 18px; }
 .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 4px 12px; align-items: start; cursor: pointer; }
 .opt input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
 .opt b { font-weight: 600; }
@@ -164,7 +169,8 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
 @media (max-width: 560px) {
   .steps { grid-template-columns: 1fr; gap: 8px; }
   .btn.big { width: 100%; }
-  .allbar .btn { width: 100%; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .stepnote { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -178,9 +184,12 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
   <ol class="steps" aria-label="How it works">
     <li id="s1" class="on"><span class="n">1</span>Add your file</li>
     <li id="s2"><span class="n">2</span>Check the map</li>
-    <li id="s3"><span class="n">3</span>Download</li>
+    <li id="s3"><span class="n">3</span>Choose options</li>
+    <li id="s4"><span class="n">4</span>Download</li>
   </ol>
 
+  <div class="step">
+  <h2 class="stephead"><span class="n">1</span>Add your file</h2>
   <section class="drop" id="drop" aria-label="Add files">
     <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
     <button class="btn primary big" id="pick" type="button">Choose a file</button>
@@ -188,25 +197,35 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
     <div class="hint">Files ending in .kml or .kmz, up to 1 MB each. You can choose more than one.</div>
     <input id="file" type="file" accept=".kml,.kmz" multiple hidden>
   </section>
+  </div>
 
   <div id="status" role="status" aria-live="polite"></div>
 
-  <div class="allbar" id="allbar" hidden>
-    <p id="allcount"></p>
-    <button class="btn primary" id="all" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Download all</button>
-  </div>
+  <section class="step" id="step2" aria-labelledby="h2" hidden>
+    <h2 class="stephead" id="h2"><span class="n">2</span>Check the map</h2>
+    <p class="stepnote">Make sure the shapes are where you expect them.</p>
+    <div class="results" id="results"></div>
+  </section>
 
-  <section class="results" id="results" aria-label="Your files"></section>
-
-  <div style="text-align:center"><button class="linkbtn" id="clear" type="button" hidden>Start over</button></div>
-
-  <details class="more">
-    <summary>More options</summary>
-    <div class="opts">
+  <section class="step" id="step3" aria-labelledby="h3" hidden>
+    <h2 class="stephead" id="h3"><span class="n">3</span>Choose options</h2>
+    <p class="stepnote">Most people can leave both of these off.</p>
+    <div class="panel opts">
       <label class="opt"><input type="checkbox" id="full"><b>Include the extra shapefile parts</b><span>Adds the .shx, .dbf and .prj files that hold names, descriptions and the map location system. Turn this on if ArcGIS won't open your file, or if you need the names.</span></label>
-      <label class="opt"><input type="checkbox" id="z3d"><b>Keep heights</b><span>Keeps the altitude from Google Earth (3D shapes). Most people can leave this off.</span></label>
+      <label class="opt"><input type="checkbox" id="z3d"><b>Keep heights</b><span>Keeps the altitude from Google Earth (3D shapes).</span></label>
     </div>
-  </details>
+  </section>
+
+  <section class="step" id="step4" aria-labelledby="h4" hidden>
+    <h2 class="stephead" id="h4"><span class="n">4</span>Download</h2>
+    <div class="panel dl">
+      <p class="dlwhat" id="dlwhat"></p>
+      <div class="actions">
+        <button class="btn primary big" id="all" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span id="alllabel">Download shapefile</span></button>
+        <button class="linkbtn" id="clear" type="button" hidden>Start over</button>
+      </div>
+    </div>
+  </section>
 
   <footer>
     <h2>FAQ</h2>
@@ -214,7 +233,7 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
       <details><summary>Is my file private?</summary><p id="privfaq">Yes. Your file never leaves your computer and is never saved anywhere. It disappears when you click Start over or close this page.</p></details>
       <details><summary>Why is my download a .zip?</summary><p id="zipfaq">Browsers can't save a .shp file on its own here, so it comes inside a .zip. Double-click the .zip to open it and you'll find your .shp files inside.</p></details>
       <details><summary>Why are there up to three .shp files?</summary><p>A shapefile can hold only one kind of shape, so places (points), paths (lines) and areas (polygons) each get their own file.</p></details>
-      <details><summary>How do I open the shapefile?</summary><p>In QGIS, drag the .shp file onto the map. In ArcGIS Pro, use Map → Add Data and pick the .shp. ArcGIS also needs the extra shapefile parts, and so does seeing names and descriptions in any program: open More options above, turn on "Include the extra shapefile parts", then download again.</p></details>
+      <details><summary>How do I open the shapefile?</summary><p>In QGIS, drag the .shp file onto the map. In ArcGIS Pro, use Map → Add Data and pick the .shp. ArcGIS also needs the extra shapefile parts, and so does seeing names and descriptions in any program: in step 3, turn on "Include the extra shapefile parts", then download again.</p></details>
       <details><summary>My file is over 1 MB. What can I do?</summary><p>Save it as a .kmz instead of a .kml. A .kmz is compressed and is often much smaller. In Google Earth, right-click the folder, choose Save Place As, and pick .kmz. If it's still too big, save each folder as its own file and add them here together.</p></details>
     </div>
   </footer>
@@ -568,7 +587,7 @@ function say(msg, kind = "info") {
 }
 
 function setStep(n) {
-  [1, 2, 3].forEach(i => {
+  [1, 2, 3, 4].forEach(i => {
     const li = $("s" + i); li.classList.toggle("on", i === n); li.classList.toggle("done", i < n);
   });
 }
@@ -592,7 +611,7 @@ async function saveBlob(filename, blob) {
   if (downloads) {
     try {
       await downloads.save({ filename, data: blob });
-      setStep(3);
+      setStep(4);
       say(`Done! "${filename}" is in your Downloads folder. Double-click it to open it.`, "ok");
     } catch (e) {
       const c = e?.code;
@@ -605,7 +624,7 @@ async function saveBlob(filename, blob) {
   if (window.claude) { say("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad"); return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  setStep(3); say(`Done! "${filename}" is in your Downloads folder.${filename.endsWith(".zip") ? " Double-click it to open it." : ""}`, "ok");
+  setStep(4); say(`Done! "${filename}" is in your Downloads folder.${filename.endsWith(".zip") ? " Double-click it to open it." : ""}`, "ok");
 }
 
 function uniqueStem(stem) {
@@ -669,8 +688,8 @@ function renderCard(it) {
   }
 
   const actions = el("div", "actions");
-  if (layers.length) {
-    const dl = el("button", "btn primary big"); dl.type = "button"; dl.innerHTML = DL_ICON; dl.appendChild(document.createTextNode("Download shapefile"));
+  if (layers.length && !it.example) {
+    const dl = el("button", "linkbtn only", "Download this file only"); dl.type = "button";
     dl.addEventListener("click", () => downloadLayers(layers, it.stem));
     actions.appendChild(dl);
   }
@@ -696,10 +715,31 @@ function renderCard(it) {
   return card;
 }
 
+// What step 4 downloads: the user's converted files, or the example if that's all there is.
+function targets() {
+  const ready = items.filter(i => i.layers?.length);
+  const real = ready.filter(i => !i.example);
+  return real.length ? real : ready;
+}
+
+function updateDownload() {
+  const t = targets(), full = $("full").checked;
+  const nShp = t.reduce((a, i) => a + i.layers.length, 0);
+  const bare = !HOSTED_ON_CLAUDE && t.length === 1 && nShp === 1 && !full;
+  const what = `${nShp} ${full ? (nShp === 1 ? "shapefile with all its parts" : "shapefiles with all their parts") : ".shp file" + (nShp === 1 ? "" : "s")}`;
+  $("dlwhat").textContent = !t.length ? "There's nothing to download yet. Add a file in step 1."
+    : bare ? "You'll get 1 .shp file."
+    : `You'll get a .zip with ${what}${t.length > 1 ? ` from your ${t.length} files` : ""}.`;
+  if (t.length && t[0].example) $("dlwhat").textContent += " This is the example file.";
+  $("alllabel").textContent = t.length > 1 ? `Download all ${t.length} files` : "Download shapefile";
+  $("all").disabled = !t.length;
+}
+
 function refresh() {
-  const ok = items.filter(i => i.layers?.length && !i.example);
-  $("allbar").hidden = ok.length < 2;
-  $("allcount").textContent = `${ok.length} files ready`;
+  const real = items.filter(i => i.layers?.length && !i.example);
+  results.classList.toggle("multi", real.length > 1);
+  ["step2", "step3", "step4"].forEach(id => $(id).hidden = !items.length);
+  updateDownload();
   const hasReal = items.some(i => !i.example);
   $("clear").hidden = !hasReal;
   drop.classList.toggle("compact", hasReal);
@@ -737,7 +777,7 @@ async function handleFiles(fileList, opts = {}) {
   refresh();
   if (opts.example) { say("Here's an example so you can see how it works. Add your own file above to get started."); return; }
   if (ok) setStep(2);
-  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below, then click Download shapefile." : `All ${ok} files are ready. Check each map, then download them one by one or all at once.`, "ok");
+  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below, then download it in step 4." : `All ${ok} files are ready. Check each map below, then download them all in step 4.`, "ok");
   else if (ok) say(`${ok} file${ok === 1 ? " is" : "s are"} ready, but ${bad} couldn't be converted. See the message${bad === 1 ? "" : "s"} below.`, "bad");
   else say(files.length === 1 ? "That file couldn't be converted. See the message below." : "None of those files could be converted. See the messages below.", "bad");
   results.firstElementChild?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
@@ -755,8 +795,10 @@ document.addEventListener("drop", e => { e.preventDefault(); if (e.target.closes
 $("clear").addEventListener("click", () => { items.length = 0; results.textContent = ""; refresh(); say("Everything has been cleared. Add a new file whenever you're ready."); });
 
 $("all").addEventListener("click", () => {
+  const t = targets(); if (!t.length) return;
+  if (t.length === 1) return downloadLayers(t[0].layers, t[0].stem);
   const zip = new JSZip();
-  for (const i of items) if (i.layers?.length && !i.example) addToZip(zip, i.layers);
+  for (const i of t) addToZip(zip, i.layers);
   saveZip("shapefiles.zip", zip);
 });
 
@@ -767,6 +809,8 @@ function rerender() {
     i.layers = convertFeatures(i.features, i.stem, useZ);
     const card = renderCard(i); i.card.replaceWith(card); i.card = card;
   }
+  updateDownload();
+  if (items.some(i => !i.example)) setStep(3);
 }
 $("z3d").addEventListener("change", rerender);
 $("full").addEventListener("change", rerender);
