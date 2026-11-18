@@ -209,11 +209,13 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
   </details>
 
   <footer>
-    <h2>Good to know</h2>
+    <h2>FAQ</h2>
     <div class="faq">
       <details><summary>Is my file private?</summary><p id="privfaq">Yes. Your file never leaves your computer and is never saved anywhere. It disappears when you click Start over or close this page.</p></details>
       <details><summary>Why is my download a .zip?</summary><p id="zipfaq">Browsers can't save a .shp file on its own here, so it comes inside a .zip. Double-click the .zip to open it and you'll find your .shp files inside.</p></details>
       <details><summary>Why are there up to three .shp files?</summary><p>A shapefile can hold only one kind of shape, so places (points), paths (lines) and areas (polygons) each get their own file.</p></details>
+      <details><summary>How do I open the shapefile?</summary><p>In QGIS, drag the .shp file onto the map. In ArcGIS Pro, use Map → Add Data and pick the .shp. ArcGIS also needs the extra shapefile parts, and so does seeing names and descriptions in any program: open More options above, turn on "Include the extra shapefile parts", then download again.</p></details>
+      <details><summary>My file is over 1 MB. What can I do?</summary><p>Save it as a .kmz instead of a .kml. A .kmz is compressed and is often much smaller. In Google Earth, right-click the folder, choose Save Place As, and pick .kmz. If it's still too big, save each folder as its own file and add them here together.</p></details>
     </div>
   </footer>
 </div>
