@@ -376,12 +376,15 @@ function bboxOf(pts) {
   return pts.length ? b : [0,0,0,0,0,0];
 }
 
+// Shapefile "no data" for measures (any value below -1e38). We have no measures to store.
+const NO_M = -1e39;
+
 function encodeRecord(type, g) {
   if (type === T.POINT) { const dv = new DataView(new ArrayBuffer(20)); dv.setInt32(0, type, true); dv.setFloat64(4, g[0], true); dv.setFloat64(12, g[1], true); return dv.buffer; }
-  if (type === T.POINTZ) { const dv = new DataView(new ArrayBuffer(36)); dv.setInt32(0, type, true); dv.setFloat64(4, g[0], true); dv.setFloat64(12, g[1], true); dv.setFloat64(20, g[2], true); dv.setFloat64(28, 0, true); return dv.buffer; }
+  if (type === T.POINTZ) { const dv = new DataView(new ArrayBuffer(36)); dv.setInt32(0, type, true); dv.setFloat64(4, g[0], true); dv.setFloat64(12, g[1], true); dv.setFloat64(20, g[2], true); dv.setFloat64(28, NO_M, true); return dv.buffer; }
   const parts = g, pts = parts.flat(), n = pts.length, np = parts.length;
   const isZ = type === T.LINEZ || type === T.POLYZ;
-  const size = 44 + 4 * np + 16 * n + (isZ ? 32 + 16 * n : 0);
+  const size = 44 + 4 * np + 16 * n + (isZ ? 16 + 8 * n : 0); // Z types: the optional M block is left out
   const dv = new DataView(new ArrayBuffer(size)); const b = bboxOf(pts);
   let o = 0;
   dv.setInt32(o, type, true); o += 4;
@@ -392,7 +395,6 @@ function encodeRecord(type, g) {
   if (isZ) {
     dv.setFloat64(o, b[4], true); dv.setFloat64(o + 8, b[5], true); o += 16;
     for (const p of pts) { dv.setFloat64(o, p[2], true); o += 8; }
-    o += 16 + 8 * n; // M range + M values left at 0
   }
   return dv.buffer;
 }
