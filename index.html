@@ -146,6 +146,10 @@ h1 .hl { color: var(--accent); }
 .card .map svg { width: 100%; height: 100%; display: block; }
 .card .map .attr { position: absolute; right: 6px; bottom: 6px; font-size: 11px; line-height: 1.4; padding: 1px 7px; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #ffffff; display: none; }
 .card .map.sat .attr { display: block; }
+.card .map .nosatmsg { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 12px; line-height: 1.35; padding: 5px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); display: none; }
+.card .map.nosat .nosatmsg { display: block; }
+.stepnote.claudenote { margin-top: -10px; }
+.stepnote a { color: var(--accent); font-weight: 600; }
 .card .body { padding: 20px 22px 22px; display: grid; gap: 14px; min-width: 0; }
 .card .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .card .fname { font-family: var(--f-mono); font-weight: 500; font-size: 15px; word-break: break-all; min-width: 0; }
@@ -272,6 +276,7 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
   <section class="step locked" id="step2" aria-labelledby="h2" inert>
     <h2 class="stephead" id="h2"><span class="n">2</span>Check the map</h2>
     <p class="stepnote" id="note2" data-open="Make sure the shapes are where you expect them, then click the button below." data-locked="Add a file in step 1 to see it here."></p>
+    <p class="stepnote claudenote" id="claudenote" hidden>The satellite background only shows on the team site: <a href="https://mrpaulrmulligan.github.io/kml-to-shapefile/" target="_blank" rel="noopener">mrpaulrmulligan.github.io/kml-to-shapefile</a>. Inside Claude, outside images are blocked.</p>
     <div class="placeholder" id="placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>Your map will show up here.</div>
     <div class="results" id="results"></div>
     <div class="confirm" id="confirmrow">
@@ -580,7 +585,9 @@ function addToZip(zip, layers) {
 
 const SVGNS = "http://www.w3.org/2000/svg";
 // Satellite tiles (Esri World Imagery). Not loaded inside Claude, where outside images are blocked.
-const TILE_URL = (z, y, x) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+// Esri serves the same tiles from two hosts; if the first is blocked we try the second.
+const TILE_HOSTS = ["https://server.arcgisonline.com/ArcGIS", "https://services.arcgisonline.com/arcgis"];
+const TILE_URL = (z, y, x, h = 0) => `${TILE_HOSTS[h]}/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
 const USE_TILES = !window.claude;
 
 // lon/lat -> Web Mercator pixels at zoom 0 (256px world)
@@ -612,16 +619,24 @@ function drawMap(map, layers, W, H) {
     const n = 2 ** z, size = 256 * k;
     const left = cx * n - W / 2 / k, top = cy * n - H / 2 / k;
     const g = add("g", {});
+    let pending = 0, loaded = 0;
+    const settle = () => { if (--pending === 0 && !loaded) map.classList.add("nosat"); };
     for (let ty = Math.floor(top / 256); ty <= Math.floor((top + H / k) / 256); ty++) {
       if (ty < 0 || ty >= n) continue;
       for (let tx = Math.floor(left / 256); tx <= Math.floor((left + W / k) / 256); tx++) {
         const img = add("image", { x: ((tx * 256 - left) * k).toFixed(1), y: ((ty * 256 - top) * k).toFixed(1), width: (size + 0.6).toFixed(1), height: (size + 0.6).toFixed(1), href: TILE_URL(z, ty, ((tx % n) + n) % n), preserveAspectRatio: "none" }, g);
-        img.addEventListener("load", () => map.classList.add("sat"), { once: true });
-        img.addEventListener("error", () => img.remove(), { once: true });
+        const tile = [z, ty, ((tx % n) + n) % n];
+        pending++;
+        img.addEventListener("load", () => { loaded++; map.classList.add("sat"); settle(); });
+        img.addEventListener("error", () => {
+          if (img.dataset.host !== "1") { img.dataset.host = "1"; img.setAttribute("href", TILE_URL(...tile, 1)); return; }
+          img.remove(); settle();
+        });
       }
     }
     const attr = el("div", "attr", "Imagery © Esri, Maxar, Earthstar Geographics");
     map.appendChild(attr);
+    map.appendChild(el("div", "nosatmsg", "Satellite background couldn't load. Your network may block it. Your shapes are still correct."));
   }
 
   const halo = { stroke: "#ffffff", "stroke-opacity": ".85", fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round" };
@@ -814,6 +829,7 @@ function refresh() {
   results.classList.toggle("multi", real.length > 1);
   const hasReal = items.length > 0;
   $("placeholder").hidden = hasReal;
+  $("claudenote").hidden = !hasReal || USE_TILES;
   if (!real.length) confirmed = false;
   results.classList.toggle("confirmed", confirmed);
   lockStep(2, !hasReal); lockStep(3, !confirmed); lockStep(4, !confirmed);
