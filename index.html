@@ -114,10 +114,16 @@ h1 .hl { color: var(--accent); }
 .banner.bad { background: var(--err-soft); color: var(--ink); }
 .banner.bad::before { content: "!"; color: var(--err); font-weight: 700; }
 
-.step { display: grid; gap: 12px; }
+.step { display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px 28px 28px; box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px -12px rgba(0, 0, 0, .12); }
+.step > .stephead { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.step > .stephead:has(+ .stepnote) { padding-bottom: 0; border-bottom: 0; }
+.step > .stepnote:not(.claudenote):not(:has(+ .claudenote)) { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.step > .stepnote:has(+ .claudenote) { margin-bottom: -6px; }
+.step > .claudenote { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.step .panel, .step .drop, .step .card, .step .placeholder { background: var(--bg); }
 .stephead { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
 .stephead .n { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--accent); color: var(--accent-ink); }
-.stepnote { margin: -6px 0 0 44px; color: var(--muted); font-size: 15px; }
+.stepnote { margin: -10px 0 0 44px; color: var(--muted); font-size: 15px; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
 .dl { display: grid; gap: 14px; }
 .dlwhat { margin: 0; font-size: 17px; }
@@ -125,30 +131,49 @@ h1 .hl { color: var(--accent); }
 .placeholder { display: grid; justify-items: center; gap: 10px; padding: 44px 20px; border: 2px dashed var(--line); border-radius: 16px; color: var(--muted); font-size: 16px; text-align: center; }
 .placeholder svg { width: 40px; height: 40px; }
 .results.multi.confirmed .only { display: inline; }
-.step.locked { opacity: .4; filter: grayscale(1); user-select: none; }
+.step.locked { opacity: .45; filter: grayscale(1); user-select: none; box-shadow: none; }
 .step.locked .stephead .n { background: var(--line); color: var(--muted); }
 .step { transition: opacity .25s ease, filter .25s ease; }
-.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-.confirm .btn.done { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
-.confirm .sub { color: var(--muted); font-size: 15px; }
+.confirm { display: flex; align-items: center; gap: 10px; padding-top: 4px; }
+#status:empty { display: none; }
+.progress { font-weight: 600; font-size: 16px; color: var(--muted); }
+.progress.all { color: var(--ok); }
+.btn.check { min-height: 42px; padding: 8px 16px; font-size: 15px; }
+.btn.check .box { width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; display: grid; place-items: center; flex: none; }
+.btn.check[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.check[aria-pressed="true"] .box { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--accent); }
+.btn.check[aria-pressed="true"] .box::after { content: "\2713"; font-size: 13px; font-weight: 800; line-height: 1; }
+.card.checked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
 .results { display: grid; gap: 20px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 300px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 390px minmax(0, 1fr); height: 260px; transition: border-color .15s, box-shadow .15s; }
 .card.failed { grid-template-columns: 1fr; height: auto; }
-.card .map { background: var(--bg); border-right: 1px solid var(--line); width: 300px; height: 300px; max-width: 100%; display: grid; place-items: center; }
+.card .map { background: var(--bg); border-right: 1px solid var(--line); width: 390px; height: 260px; max-width: 100%; display: grid; place-items: center; }
 .card .body { align-content: start; overflow-y: auto; padding: 18px 20px !important; gap: 10px !important; }
 .card .top { gap: 6px 10px; }
 .card .summary { font-size: 17px; }
 .card .chip { padding: 3px 10px; font-size: 14px; }
 .card .btn.big { font-size: 16px; padding: 10px 18px; min-height: 46px; }
 .card details { padding-top: 8px; }
-.card .map { position: relative; overflow: hidden; }
-.card .map svg { width: 100%; height: 100%; display: block; }
-.card .map .attr { position: absolute; right: 6px; bottom: 6px; font-size: 11px; line-height: 1.4; padding: 1px 7px; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #ffffff; display: none; }
-.card .map.sat .attr { display: block; }
-.card .map .nosatmsg { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 12px; line-height: 1.35; padding: 5px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); display: none; }
-.card .map.nosat .nosatmsg { display: block; }
-.stepnote.claudenote { margin-top: -10px; }
+.map { position: relative; overflow: hidden; }
+.map > svg { width: 100%; height: 100%; display: block; }
+.map.zoomable { cursor: zoom-in; }
+.map.zoomable:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.map .zoom { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: rgba(0, 0, 0, .55); color: #ffffff; transition: transform .15s, background .15s; }
+.map .zoom svg { width: 18px; height: 18px; }
+.map.zoomable:hover .zoom { background: var(--accent); color: var(--accent-ink); transform: scale(1.08); }
+.map .attr { position: absolute; right: 6px; bottom: 6px; font-size: 11px; line-height: 1.4; padding: 1px 7px; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #ffffff; display: none; }
+.map.sat .attr { display: block; }
+.map .nosatmsg { position: absolute; left: 8px; right: 8px; bottom: 8px; font-size: 12px; line-height: 1.35; padding: 5px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); display: none; }
+.map.nosat .nosatmsg { display: block; }
+.mapdlg { border: 1px solid var(--line); border-radius: 18px; padding: 0; background: var(--surface); color: var(--ink); max-width: calc(100vw - 32px); max-height: 96vh; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .5); }
+.mapdlg::backdrop { background: rgba(8, 14, 13, .7); }
+.mapdlg .dlghead, .mapdlg .dlgfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; }
+.mapdlg .dlghead { border-bottom: 1px solid var(--line); }
+.mapdlg .dlgfoot { border-top: 1px solid var(--line); }
+.mapdlg .map.big { background: var(--bg); margin: 0 auto; }
+.mapdlg .btn { min-height: 42px; padding: 8px 14px; font-size: 15px; }
+.stepnote.claudenote { margin-top: -12px; }
 .stepnote a { color: var(--accent); font-weight: 600; }
 .card .body { padding: 20px 22px 22px; display: grid; gap: 14px; min-width: 0; }
 .card .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
@@ -195,10 +220,11 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
   .hero-main { grid-template-columns: 1fr; }
   .hero-art { display: none; }
   .card { grid-template-columns: 1fr; height: auto; }
-  .card .map { border-right: 0; border-bottom: 1px solid var(--line); width: 100%; height: auto; aspect-ratio: 1 / 1; max-height: 300px; }
+  .card .map { border-right: 0; border-bottom: 1px solid var(--line); width: 100%; height: auto; aspect-ratio: 3 / 2; }
   .card .body { overflow: visible; }
 }
 @media (max-width: 560px) {
+  .step { padding: 18px 16px 20px; border-radius: 16px; }
   .steps { grid-template-columns: 1fr; gap: 8px; }
   .btn.big { width: 100%; }
   .hero-main { padding: 28px 20px 22px; }
@@ -260,7 +286,7 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
     </ol>
   </header>
 
-  <div class="step">
+  <div class="step" id="step1">
   <h2 class="stephead"><span class="n">1</span>Add your file</h2>
   <section class="drop" id="drop" aria-label="Add files">
     <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
@@ -275,14 +301,11 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
 
   <section class="step locked" id="step2" aria-labelledby="h2" inert>
     <h2 class="stephead" id="h2"><span class="n">2</span>Check the map</h2>
-    <p class="stepnote" id="note2" data-open="Make sure the shapes are where you expect them, then click the button below." data-locked="Add a file in step 1 to see it here."></p>
+    <p class="stepnote" id="note2" data-open="Look at each map. If the shapes are where you expect, click “Looks right” on that map. Click a map to see it bigger." data-locked="Add a file in step 1 to see it here."></p>
     <p class="stepnote claudenote" id="claudenote" hidden>The satellite background only shows on the team site: <a href="https://mrpaulrmulligan.github.io/kml-to-shapefile/" target="_blank" rel="noopener">mrpaulrmulligan.github.io/kml-to-shapefile</a>. Inside Claude, outside images are blocked.</p>
     <div class="placeholder" id="placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>Your map will show up here.</div>
     <div class="results" id="results"></div>
-    <div class="confirm" id="confirmrow">
-      <button class="btn primary" id="confirm" type="button">Yes, the map looks right</button>
-      <span class="sub" id="confirmsub"></span>
-    </div>
+    <div class="confirm" id="confirmrow"><span class="progress" id="progress"></span></div>
   </section>
 
   <section class="step locked" id="step3" aria-labelledby="h3" inert>
@@ -305,6 +328,12 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
       </div>
     </div>
   </section>
+
+  <dialog class="mapdlg" id="mapdlg" aria-labelledby="bigname">
+    <div class="dlghead"><span class="fname" id="bigname"></span><button class="btn" id="bigclose" type="button" aria-label="Close the big map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Close</button></div>
+    <div class="map big" id="bigmap"></div>
+    <div class="dlgfoot"><span class="sub">Do the shapes look right?</span><span id="bigcheck"></span></div>
+  </dialog>
 
   <footer>
     <h2>FAQ</h2>
@@ -659,7 +688,7 @@ function drawMap(map, layers, W, H) {
 const $ = id => document.getElementById(id);
 const results = $("results"), statusEl = $("status");
 const items = [];
-let confirmed = false;
+let confirmed = false; // true once every converted map is checked
 const MAX_BYTES = 1024 * 1024;
 const fmtSize = b => b >= 1024 * 1024 ? (Math.ceil(b / 104857.6) / 10).toFixed(1) + " MB" : Math.ceil(b / 1024) + " KB";
 const KIND = {
@@ -753,8 +782,12 @@ function renderCard(it) {
     let last = "";
     new ResizeObserver(() => {
       const w = Math.round(map.clientWidth), h = Math.round(map.clientHeight), key = w + "x" + h;
-      if (!w || !h || key === last) return; last = key; drawMap(map, layers, w, h);
+      if (!w || !h || key === last) return; last = key; drawMap(map, layers, w, h); map.appendChild(zoomBadge());
     }).observe(map);
+    map.classList.add("zoomable"); map.tabIndex = 0; map.setAttribute("role", "button");
+    map.setAttribute("aria-label", `See a bigger map of ${it.filename}`);
+    map.addEventListener("click", () => openBigMap(it));
+    map.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBigMap(it); } });
   } else map.appendChild(el("div", "sub", "Nothing to show on a map"));
   card.appendChild(map);
 
@@ -780,6 +813,8 @@ function renderCard(it) {
 
   const actions = el("div", "actions");
   if (layers.length) {
+    card.classList.toggle("checked", !!it.checked);
+    actions.appendChild(checkButton(it));
     const dl = el("button", "linkbtn only", "Download this file only"); dl.type = "button";
     dl.addEventListener("click", () => downloadLayers(layers, it.stem));
     actions.appendChild(dl);
@@ -830,15 +865,17 @@ function refresh() {
   const hasReal = items.length > 0;
   $("placeholder").hidden = hasReal;
   $("claudenote").hidden = !hasReal || USE_TILES;
-  if (!real.length) confirmed = false;
+  const nChecked = real.filter(i => i.checked).length;
+  confirmed = real.length > 0 && nChecked === real.length;
   results.classList.toggle("confirmed", confirmed);
   lockStep(2, !hasReal); lockStep(3, !confirmed); lockStep(4, !confirmed);
   $("confirmrow").hidden = !hasReal;
-  const c = $("confirm");
-  c.disabled = !real.length || confirmed;
-  c.classList.toggle("done", confirmed);
-  c.textContent = confirmed ? "\u2713 Map checked" : "Yes, the map looks right";
-  $("confirmsub").textContent = !real.length ? "Add a file that works to continue." : confirmed ? "Now pick your options and download below." : "This unlocks steps 3 and 4.";
+  const pr = $("progress");
+  pr.classList.toggle("all", confirmed);
+  pr.textContent = !real.length ? "Add a file that works to continue."
+    : confirmed ? (real.length === 1 ? "\u2713 Map checked. Steps 3 and 4 are open." : `\u2713 All ${real.length} maps checked. Steps 3 and 4 are open.`)
+    : real.length === 1 ? "Check the map to open steps 3 and 4."
+    : `${nChecked} of ${real.length} maps checked. Check them all to open steps 3 and 4.`;
   updateDownload();
   $("clear").hidden = !hasReal;
   drop.classList.toggle("compact", hasReal);
@@ -862,7 +899,6 @@ function removeItem(it) {
 async function handleFiles(fileList) {
   const files = Array.from(fileList);
   if (!files.length) return;
-  confirmed = false;
   say(`Reading ${files.length === 1 ? "your file" : files.length + " files"}…`);
   const useZ = $("z3d").checked;
   let ok = 0, bad = 0;
@@ -882,7 +918,7 @@ async function handleFiles(fileList) {
     results.appendChild(it.card); items.push(it);
   }
   refresh();
-  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below, then click \u201cYes, the map looks right\u201d." : `All ${ok} files are ready. Check each map below, then click \u201cYes, the map looks right\u201d.`, "ok");
+  if (ok && !bad) say(ok === 1 ? "Your file is ready. Check the map below and click \u201cLooks right\u201d." : `All ${ok} files are ready. Check each map below and click \u201cLooks right\u201d on each one.`, "ok");
   else if (ok) say(`${ok} file${ok === 1 ? " is" : "s are"} ready, but ${bad} couldn't be converted. See the message${bad === 1 ? "" : "s"} below.`, "bad");
   else say(files.length === 1 ? "That file couldn't be converted. See the message below." : "None of those files could be converted. See the messages below.", "bad");
   results.firstElementChild?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
@@ -897,10 +933,56 @@ drop.addEventListener("drop", e => { if (e.dataTransfer?.files?.length) handleFi
 document.addEventListener("dragover", e => e.preventDefault());
 document.addEventListener("drop", e => { e.preventDefault(); if (e.target.closest && !e.target.closest("#drop") && e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files); });
 
-$("confirm").addEventListener("click", () => {
-  confirmed = true; refresh(); say("");
-  $("step3").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-});
+function zoomBadge() {
+  const b = el("span", "zoom"); b.setAttribute("aria-hidden", "true");
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg>';
+  return b;
+}
+
+let bigItem = null;
+function drawBig() {
+  if (!bigItem) return;
+  const box = $("bigmap");
+  const maxW = Math.min(1100, window.innerWidth - 32 - 40), maxH = window.innerHeight * 0.92 - 150;
+  let W = maxW, H = W * 2 / 3;
+  if (H > maxH) { H = Math.max(200, maxH); W = H * 3 / 2; }
+  W = Math.round(W); H = Math.round(H);
+  box.style.width = W + "px"; box.style.height = H + "px"; box.className = "map big";
+  drawMap(box, bigItem.layers, W, H);
+}
+function openBigMap(it) {
+  bigItem = it;
+  $("bigname").textContent = it.filename;
+  const slot = $("bigcheck"); slot.textContent = ""; slot.appendChild(checkButton(it));
+  const d = $("mapdlg"); if (!d.open) d.showModal();
+  drawBig();
+}
+$("bigclose").addEventListener("click", () => $("mapdlg").close());
+$("mapdlg").addEventListener("click", e => { if (e.target === $("mapdlg")) $("mapdlg").close(); });
+$("mapdlg").addEventListener("close", () => { const it = bigItem; bigItem = null; it?.card.querySelector(".map")?.focus(); });
+window.addEventListener("resize", () => { if ($("mapdlg").open) drawBig(); });
+
+function toggleChecked(it) {
+  const was = confirmed;
+  it.checked = !it.checked;
+  for (const b of document.querySelectorAll(`[data-check="${it.stem}"]`)) setCheckBtn(b, it.checked);
+  it.card.classList.toggle("checked", it.checked);
+  refresh(); say("");
+  if (!was && confirmed && !$("mapdlg").open) $("step3").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+
+function setCheckBtn(b, on) {
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  b.lastChild.textContent = on ? "Checked" : "Looks right";
+}
+
+function checkButton(it) {
+  const b = el("button", "btn check"); b.type = "button"; b.dataset.check = it.stem;
+  b.appendChild(el("span", "box")); b.appendChild(document.createTextNode(""));
+  setCheckBtn(b, !!it.checked);
+  b.addEventListener("click", () => toggleChecked(it));
+  return b;
+}
 
 $("clear").addEventListener("click", () => { items.length = 0; confirmed = false; results.textContent = ""; refresh(); say("Everything has been cleared. Add a new file whenever you're ready."); });
 
