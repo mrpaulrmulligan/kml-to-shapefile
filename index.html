@@ -138,7 +138,7 @@ h1 .hl { color: var(--accent); }
 #status:empty { display: none; }
 .progress { font-weight: 600; font-size: 16px; color: var(--muted); }
 .progress.all { color: var(--ok); }
-.btn.check { min-height: 42px; padding: 8px 16px; font-size: 15px; }
+.btn.check { white-space: nowrap; min-height: 42px; padding: 8px 16px; font-size: 15px; }
 .btn.check .box { width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; display: grid; place-items: center; flex: none; }
 .btn.check[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn.check[aria-pressed="true"] .box { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--accent); }
@@ -216,6 +216,30 @@ footer .faq summary:hover { background: var(--accent-soft); }
 footer .faq summary:focus-visible { outline-offset: -3px; }
 footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--muted); }
 
+.steps li > button { all: unset; display: flex; align-items: center; gap: 10px; border-radius: 8px; cursor: default; }
+.steps li.go > button { cursor: pointer; }
+.steps li.go > button:hover { color: var(--accent); }
+.steps li > button:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.steps li.alldone .n { background: var(--ok); border-color: var(--ok); color: #ffffff; }
+.mapdlg .dlgtitle { display: grid; gap: 2px; min-width: 0; }
+.mapdlg .dlgtitle .sub { font-size: 14px; }
+.mapdlg .dlgfoot { flex-wrap: wrap; }
+.mapdlg .dlgnav, .mapdlg .dlgcheck { display: flex; align-items: center; gap: 10px; }
+.mapdlg .dlgnav .sub { font-size: 15px; font-variant-numeric: tabular-nums; min-width: 92px; text-align: center; }
+.mapdlg .dlgcheck { margin-left: auto; }
+.mapdlg .btn:disabled { opacity: .4; cursor: default; border-color: var(--line); color: var(--ink); }
+.map .tip { position: absolute; z-index: 2; pointer-events: none; max-width: 260px; padding: 7px 11px; border-radius: 9px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 20px -6px rgba(0, 0, 0, .4); font-size: 14px; line-height: 1.35; }
+.map .tip b { display: block; font-size: 15px; overflow-wrap: anywhere; }
+.map .tip span { color: var(--muted); font-size: 13px; }
+.map.big .feat { cursor: pointer; }
+.map.big .feat.hl > .main { stroke-width: 5; }
+.map.big .feat.hl > circle.main { r: 9px; }
+.finished { display: grid; gap: 14px; justify-items: start; padding: 20px 22px; border-radius: 14px; background: var(--ok-soft); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+.finished h3 { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 20px; }
+.finished h3 .tick { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--ok); color: #ffffff; font-size: 17px; flex: none; }
+.finished p { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+#dlmsg:empty { display: none; }
+
 @media (max-width: 820px) {
   .hero-main { grid-template-columns: 1fr; }
   .hero-art { display: none; }
@@ -224,6 +248,9 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
   .card .body { overflow: visible; }
 }
 @media (max-width: 560px) {
+  .mapdlg .dlgcheck { margin-left: 0; width: 100%; justify-content: space-between; }
+  .mapdlg .dlgnav { width: 100%; justify-content: space-between; }
+  .steps li > button { gap: 8px; }
   .step { padding: 18px 16px 20px; border-radius: 16px; }
   .steps { grid-template-columns: 1fr; gap: 8px; }
   .btn.big { width: 100%; }
@@ -279,10 +306,10 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
       </svg>
     </div>
     <ol class="steps" aria-label="How it works">
-      <li id="s1" class="on"><span class="n">1</span>Add your file</li>
-      <li id="s2"><span class="n">2</span>Check the map</li>
-      <li id="s3"><span class="n">3</span>Choose options</li>
-      <li id="s4"><span class="n">4</span>Download</li>
+      <li id="s1" class="on"><button type="button" data-go="1"><span class="n">1</span>Add your file</button></li>
+      <li id="s2"><button type="button" data-go="2"><span class="n">2</span>Check the map</button></li>
+      <li id="s3"><button type="button" data-go="3"><span class="n">3</span>Choose options</button></li>
+      <li id="s4"><button type="button" data-go="4"><span class="n">4</span>Download</button></li>
     </ol>
   </header>
 
@@ -320,19 +347,31 @@ footer .faq p { margin: 0; padding: 0 18px 16px; max-width: 66ch; color: var(--m
   <section class="step locked" id="step4" aria-labelledby="h4" inert>
     <h2 class="stephead" id="h4"><span class="n">4</span>Download</h2>
     <p class="stepnote" id="note4" data-open="Click the button to save it to your computer." data-locked="Check the map in step 2 first."></p>
-    <div class="panel dl">
+    <div class="finished" id="done" hidden>
+      <h3><span class="tick" aria-hidden="true">✓</span>Your file is downloaded</h3>
+      <p id="donemsg"></p>
+      <div class="actions">
+        <button class="btn primary" id="another" type="button">Convert another file</button>
+        <button class="linkbtn" id="again" type="button">Download again</button>
+      </div>
+    </div>
+    <div class="panel dl" id="dlpanel">
       <p class="dlwhat" id="dlwhat"></p>
       <div class="actions">
         <button class="btn primary big" id="all" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span id="alllabel">Download shapefile</span></button>
         <button class="linkbtn" id="clear" type="button" hidden>Start over</button>
       </div>
+      <div id="dlmsg" role="status" aria-live="polite"></div>
     </div>
   </section>
 
   <dialog class="mapdlg" id="mapdlg" aria-labelledby="bigname">
-    <div class="dlghead"><span class="fname" id="bigname"></span><button class="btn" id="bigclose" type="button" aria-label="Close the big map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Close</button></div>
+    <div class="dlghead"><div class="dlgtitle"><span class="fname" id="bigname"></span><span class="sub" id="bigcount"></span></div><button class="btn" id="bigclose" type="button" aria-label="Close the big map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Close</button></div>
     <div class="map big" id="bigmap"></div>
-    <div class="dlgfoot"><span class="sub">Do the shapes look right?</span><span id="bigcheck"></span></div>
+    <div class="dlgfoot">
+      <div class="dlgnav" id="bignav"><button class="btn" id="bigprev" type="button" aria-label="Previous map">‹ Previous</button><span class="sub" id="bigpos"></span><button class="btn" id="bignext" type="button" aria-label="Next map">Next ›</button></div>
+      <div class="dlgcheck"><span class="sub">Do the shapes look right?</span><span id="bigcheck"></span></div>
+    </div>
   </dialog>
 
   <footer>
@@ -594,7 +633,7 @@ function convertFeatures(features, stem, useZ) {
     if (!recs.length) continue;
     const keys = orderedKeys(recs.map(r => r[1]));
     const out = writeShapefile(useZ ? t3 : t2, recs, keys);
-    layers.push({ kind, base: `${stem}_${kind}`, count: recs.length, keys, ...out, geoms: recs.map(r => r[0]) });
+    layers.push({ kind, base: `${stem}_${kind}`, count: recs.length, keys, ...out, geoms: recs.map(r => r[0]), attrs: recs.map(r => r[1]) });
   }
   return layers;
 }
@@ -625,7 +664,7 @@ function merc(p) {
   return [(p[0] + 180) / 360 * 256, (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 256];
 }
 
-function drawMap(map, layers, W, H) {
+function drawMap(map, layers, W, H, big = false) {
   map.textContent = "";
   const pts = [];
   for (const L of layers) for (const g of L.geoms) { if (L.kind === "points") pts.push(g); else for (const p of g) pts.push(...p); }
@@ -669,17 +708,25 @@ function drawMap(map, layers, W, H) {
   }
 
   const halo = { stroke: "#ffffff", "stroke-opacity": ".85", fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round" };
-  for (const kind of ["polygons", "lines", "points"]) for (const L of layers.filter(l => l.kind === kind)) for (const g of L.geoms) {
+  // In the big map each feature is its own group, so hovering or tapping it can show its name.
+  for (const kind of ["polygons", "lines", "points"]) for (const L of layers.filter(l => l.kind === kind)) L.geoms.forEach((g, gi) => {
+    const grp = big ? add("g", { class: "feat" }) : svg;
+    if (big) { grp.featKind = kind; grp.featAttrs = L.attrs?.[gi] || {}; }
     if (kind === "polygons") {
       const d = g.map(r => "M" + r.map(p => P(p).join(",")).join("L") + "Z").join("");
-      add("path", { d, ...halo, "stroke-width": "4.5" });
-      add("path", { d, fill: "var(--pg)", "fill-opacity": ".28", stroke: "var(--pg)", "stroke-width": "2.5", "fill-rule": "evenodd", "stroke-linejoin": "round" });
+      add("path", { d, ...halo, "stroke-width": "4.5" }, grp);
+      add("path", { d, class: "main", fill: "var(--pg)", "fill-opacity": ".28", stroke: "var(--pg)", "stroke-width": "2.5", "fill-rule": "evenodd", "stroke-linejoin": "round" }, grp);
     } else if (kind === "lines") for (const part of g) {
       const points = part.map(p => P(p).join(",")).join(" ");
-      add("polyline", { points, ...halo, "stroke-width": "5.5" });
-      add("polyline", { points, fill: "none", stroke: "var(--ln)", "stroke-width": "3", "stroke-linejoin": "round", "stroke-linecap": "round" });
-    } else { const [x, y] = P(g); add("circle", { cx: x, cy: y, r: "6.5", fill: "var(--pt)", stroke: "#ffffff", "stroke-width": "2.5" }); }
-  }
+      if (big) add("polyline", { points, fill: "none", stroke: "transparent", "stroke-width": "18", "stroke-linecap": "round" }, grp);
+      add("polyline", { points, ...halo, "stroke-width": "5.5" }, grp);
+      add("polyline", { points, class: "main", fill: "none", stroke: "var(--ln)", "stroke-width": "3", "stroke-linejoin": "round", "stroke-linecap": "round" }, grp);
+    } else {
+      const [x, y] = P(g);
+      if (big) add("circle", { cx: x, cy: y, r: "16", fill: "transparent" }, grp);
+      add("circle", { cx: x, cy: y, r: "6.5", class: "main", fill: "var(--pt)", stroke: "#ffffff", "stroke-width": "2.5" }, grp);
+    }
+  });
   map.insertBefore(svg, map.firstChild);
 }
 
@@ -707,11 +754,22 @@ function say(msg, kind = "info") {
   const b = document.createElement("div"); b.className = "banner " + kind; b.textContent = msg; statusEl.appendChild(b);
 }
 
+// n = 5 means everything is done (the file was downloaded).
 function setStep(n) {
   [1, 2, 3, 4].forEach(i => {
-    const li = $("s" + i); li.classList.toggle("on", i === n); li.classList.toggle("done", i < n);
+    const li = $("s" + i); li.classList.toggle("on", i === n); li.classList.toggle("done", i < n); li.classList.toggle("alldone", n === 5);
+    const open = i === 1 || !$("step" + i).inert;
+    li.classList.toggle("go", open);
+    const b = li.firstElementChild; b.setAttribute("aria-disabled", open ? "false" : "true");
+    b.setAttribute("aria-label", `Step ${i}: ${b.lastChild.textContent}${open ? "" : " (not open yet)"}`);
   });
 }
+const smooth = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+for (const b of document.querySelectorAll(".steps [data-go]")) b.addEventListener("click", () => {
+  const n = +b.dataset.go, sec = $("step" + n);
+  if (n !== 1 && sec.inert) return;
+  sec.scrollIntoView({ behavior: smooth(), block: "start" });
+});
 
 // Outside Claude (e.g. GitHub Pages) the browser can save a bare .shp, so a
 // single-layer, .shp-only download skips the zip.
@@ -732,21 +790,36 @@ async function saveBlob(filename, blob) {
   if (downloads) {
     try {
       await downloads.save({ filename, data: blob });
-      setStep(4);
-      say(`Done! "${filename}" is in your Downloads folder. Double-click it to open it.`, "ok");
+      showDone(filename);
     } catch (e) {
       const c = e?.code;
-      if (c === "declined") say("The download was cancelled. Click Download again whenever you're ready.");
-      else if (c === "rate_limited") say("A download box is already open. Finish that one first, then try again.", "bad");
-      else say("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad");
+      if (c === "declined") dlSay("The download was cancelled. Click Download again whenever you're ready.");
+      else if (c === "rate_limited") dlSay("A download box is already open. Finish that one first, then try again.", "bad");
+      else dlSay("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad");
     }
     return;
   }
-  if (window.claude) { say("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad"); return; }
+  if (window.claude) { dlSay("Downloading isn't available here. Open this page in claude.ai in your web browser and try again.", "bad"); return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  setStep(4); say(`Done! "${filename}" is in your Downloads folder.${filename.endsWith(".zip") ? " Double-click it to open it." : ""}`, "ok");
+  showDone(filename);
 }
+
+function dlSay(msg, kind = "info") {
+  const slot = $("dlmsg"); slot.textContent = "";
+  if (msg) slot.appendChild(el("div", "banner " + kind, msg));
+}
+let lastDownload = null; // what "Download again" repeats
+function showDone(filename) {
+  say(""); dlSay("");
+  $("donemsg").textContent = `“${filename}” is in your Downloads folder.${filename.endsWith(".zip") ? " Double-click it to open it and find your .shp files." : " You can open it in QGIS or ArcGIS."}`;
+  $("done").hidden = false; $("dlpanel").hidden = true;
+  $("note4").textContent = "All done.";
+  setStep(5);
+  $("done").scrollIntoView({ behavior: smooth(), block: "nearest" });
+  $("another").focus({ preventScroll: true });
+}
+function hideDone() { $("done").hidden = true; $("dlpanel").hidden = false; }
 
 function uniqueStem(stem) {
   const taken = new Set(items.map(i => i.stem)); let s = stem, n = 2;
@@ -816,7 +889,7 @@ function renderCard(it) {
     card.classList.toggle("checked", !!it.checked);
     actions.appendChild(checkButton(it));
     const dl = el("button", "linkbtn only", "Download this file only"); dl.type = "button";
-    dl.addEventListener("click", () => downloadLayers(layers, it.stem));
+    dl.addEventListener("click", () => { lastDownload = () => downloadLayers(it.layers, it.stem); lastDownload(); });
     actions.appendChild(dl);
   }
   const rm = el("button", "linkbtn", "Remove"); rm.type = "button";
@@ -860,6 +933,7 @@ function updateDownload() {
 }
 
 function refresh() {
+  hideDone(); dlSay("");
   const real = items.filter(i => i.layers?.length);
   results.classList.toggle("multi", real.length > 1);
   const hasReal = items.length > 0;
@@ -948,18 +1022,63 @@ function drawBig() {
   if (H > maxH) { H = Math.max(200, maxH); W = H * 3 / 2; }
   W = Math.round(W); H = Math.round(H);
   box.style.width = W + "px"; box.style.height = H + "px"; box.className = "map big";
-  drawMap(box, bigItem.layers, W, H);
+  drawMap(box, bigItem.layers, W, H, true);
+  const tip = el("div", "tip"); tip.hidden = true; box.appendChild(tip);
 }
+const realItems = () => items.filter(i => i.layers?.length);
+const CAN_HOVER = matchMedia("(hover: hover)").matches;
 function openBigMap(it) {
   bigItem = it;
   $("bigname").textContent = it.filename;
+  const counts = it.layers.map(L => plural(L.count, KIND[L.kind].word)).join(" · ");
+  $("bigcount").textContent = `${counts} · ${CAN_HOVER ? "Point at" : "Tap"} a shape to see its name`;
   const slot = $("bigcheck"); slot.textContent = ""; slot.appendChild(checkButton(it));
+  const all = realItems(), i = all.indexOf(it);
+  $("bignav").hidden = all.length < 2;
+  $("bigpos").textContent = `Map ${i + 1} of ${all.length}`;
+  $("bigprev").disabled = i <= 0; $("bignext").disabled = i >= all.length - 1;
   const d = $("mapdlg"); if (!d.open) d.showModal();
   drawBig();
 }
+function stepBig(delta) {
+  if (!bigItem) return;
+  const all = realItems(), next = all[all.indexOf(bigItem) + delta];
+  if (next) openBigMap(next);
+}
+$("bigprev").addEventListener("click", () => stepBig(-1));
+$("bignext").addEventListener("click", () => stepBig(1));
+$("mapdlg").addEventListener("keydown", e => {
+  if (e.target.closest?.("button") && (e.key === " " || e.key === "Enter")) return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); stepBig(-1); }
+  if (e.key === "ArrowRight") { e.preventDefault(); stepBig(1); }
+});
+
+// Shape names in the big map: follow the pointer on hover, stay put after a tap.
+let hlFeat = null;
+function showTip(e) {
+  const box = $("bigmap"), tip = box.querySelector(".tip"); if (!tip) return;
+  const f = e.target?.closest?.(".feat");
+  if (hlFeat && hlFeat !== f) hlFeat.classList.remove("hl");
+  if (!f) { tip.hidden = true; hlFeat = null; return; }
+  if (f !== hlFeat) {
+    hlFeat = f; f.classList.add("hl");
+    const a = f.featAttrs, kind = KIND[f.featKind].word[0];
+    tip.textContent = "";
+    tip.appendChild(el("b", null, a.name || `Unnamed ${kind}`));
+    tip.appendChild(el("span", null, kind[0].toUpperCase() + kind.slice(1) + (a.folder ? ` in “${a.folder}”` : "")));
+    tip.hidden = false;
+  }
+  const r = box.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.max(6, Math.min(r.width - tw - 6, x - tw / 2)) + "px";
+  tip.style.top = (y - th - 14 < 6 ? y + 18 : y - th - 14) + "px";
+}
+$("bigmap").addEventListener("pointermove", e => { if (e.pointerType === "mouse") showTip(e); });
+$("bigmap").addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") showTip(e); });
+$("bigmap").addEventListener("pointerleave", e => { if (e.pointerType === "mouse") showTip({ target: null }); });
 $("bigclose").addEventListener("click", () => $("mapdlg").close());
 $("mapdlg").addEventListener("click", e => { if (e.target === $("mapdlg")) $("mapdlg").close(); });
-$("mapdlg").addEventListener("close", () => { const it = bigItem; bigItem = null; it?.card.querySelector(".map")?.focus(); });
+$("mapdlg").addEventListener("close", () => { const it = bigItem; bigItem = null; it?.card.querySelector(".map")?.focus({ preventScroll: true }); });
 window.addEventListener("resize", () => { if ($("mapdlg").open) drawBig(); });
 
 function toggleChecked(it) {
@@ -968,7 +1087,20 @@ function toggleChecked(it) {
   for (const b of document.querySelectorAll(`[data-check="${it.stem}"]`)) setCheckBtn(b, it.checked);
   it.card.classList.toggle("checked", it.checked);
   refresh(); say("");
-  if (!was && confirmed && !$("mapdlg").open) $("step3").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  const dlg = $("mapdlg");
+  if (dlg.open && it.checked && bigItem === it) {
+    // Move on to the next map that still needs checking, or finish.
+    const all = realItems(), at = all.indexOf(it);
+    const next = [...all.slice(at + 1), ...all.slice(0, at)].find(i => !i.checked);
+    clearTimeout(toggleChecked.t);
+    toggleChecked.t = setTimeout(() => {
+      if (!dlg.open || bigItem !== it) return;
+      if (next) openBigMap(next);
+      else { dlg.close(); $("step3").scrollIntoView({ behavior: smooth(), block: "start" }); }
+    }, 450);
+    return;
+  }
+  if (!was && confirmed && !dlg.open) $("step3").scrollIntoView({ behavior: smooth(), block: "start" });
 }
 
 function setCheckBtn(b, on) {
@@ -984,14 +1116,22 @@ function checkButton(it) {
   return b;
 }
 
-$("clear").addEventListener("click", () => { items.length = 0; confirmed = false; results.textContent = ""; refresh(); say("Everything has been cleared. Add a new file whenever you're ready."); });
+function resetAll(msg) { if ($("mapdlg").open) $("mapdlg").close(); items.length = 0; confirmed = false; results.textContent = ""; refresh(); say(msg); }
+$("clear").addEventListener("click", () => resetAll("Everything has been cleared. Add a new file whenever you're ready."));
 
-$("all").addEventListener("click", () => {
+$("all").addEventListener("click", () => { lastDownload = downloadAll; downloadAll(); });
+function downloadAll() {
   const t = targets(); if (!t.length) return;
   if (t.length === 1) return downloadLayers(t[0].layers, t[0].stem);
   const zip = new JSZip();
   for (const i of t) addToZip(zip, i.layers);
   saveZip("shapefiles.zip", zip);
+}
+$("again").addEventListener("click", () => lastDownload?.());
+$("another").addEventListener("click", () => {
+  resetAll("Ready for your next file.");
+  window.scrollTo({ top: 0, behavior: smooth() });
+  $("pick").focus({ preventScroll: true });
 });
 
 function rerender() {
@@ -1003,8 +1143,11 @@ function rerender() {
   }
   refresh();
 }
-$("z3d").addEventListener("change", rerender);
-$("full").addEventListener("change", rerender);
+const OPTS_KEY = "kml2shp.options";
+try { const o = JSON.parse(localStorage.getItem(OPTS_KEY) || "{}"); $("full").checked = !!o.full; $("z3d").checked = !!o.z3d; } catch (_) {}
+function saveOpts() { try { localStorage.setItem(OPTS_KEY, JSON.stringify({ full: $("full").checked, z3d: $("z3d").checked })); } catch (_) {} }
+$("z3d").addEventListener("change", () => { saveOpts(); rerender(); });
+$("full").addEventListener("change", () => { saveOpts(); rerender(); });
 
 if (USE_TILES) $("privfaq").append(" The satellite background in the map preview is loaded from Esri, so Esri can see roughly which area is on screen, but never your file.");
 if (!HOSTED_ON_CLAUDE) $("zipfaq").textContent = "If your file has only one kind of shape, you get a single .shp file. If it has several kinds, or you download several files at once, they come together in a .zip. Double-click the .zip to open it and you'll find your .shp files inside.";
