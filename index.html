@@ -782,11 +782,21 @@ function downloadLayers(layers, stem) {
   const z = new JSZip(); addToZip(z, layers); return saveZip(`${stem}_shapefile.zip`, z);
 }
 
+let saving = false;
 async function saveZip(filename, zip) {
-  return saveBlob(filename, await zip.generateAsync({ type: "blob", compression: "DEFLATE" }));
+  if (saving) return;
+  saving = true; // block a second click while the zip is built
+  let blob;
+  try { blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" }); } finally { saving = false; }
+  return saveBlob(filename, blob);
 }
 
 async function saveBlob(filename, blob) {
+  if (saving) return;
+  saving = true;
+  try { await saveBlobNow(filename, blob); } finally { saving = false; }
+}
+async function saveBlobNow(filename, blob) {
   if (downloads) {
     try {
       await downloads.save({ filename, data: blob });
@@ -1017,7 +1027,8 @@ let bigItem = null;
 function drawBig() {
   if (!bigItem) return;
   const box = $("bigmap");
-  const maxW = Math.min(1100, window.innerWidth - 32 - 40), maxH = window.innerHeight * 0.92 - 150;
+  const chrome = document.querySelector(".mapdlg .dlghead").offsetHeight + document.querySelector(".mapdlg .dlgfoot").offsetHeight + 4;
+  const maxW = Math.min(1100, window.innerWidth - 32 - 2), maxH = window.innerHeight * 0.96 - chrome;
   let W = maxW, H = W * 2 / 3;
   if (H > maxH) { H = Math.max(200, maxH); W = H * 3 / 2; }
   W = Math.round(W); H = Math.round(H);
@@ -1088,13 +1099,13 @@ function toggleChecked(it) {
   it.card.classList.toggle("checked", it.checked);
   refresh(); say("");
   const dlg = $("mapdlg");
+  clearTimeout(toggleChecked.t);
   if (dlg.open && it.checked && bigItem === it) {
     // Move on to the next map that still needs checking, or finish.
     const all = realItems(), at = all.indexOf(it);
     const next = [...all.slice(at + 1), ...all.slice(0, at)].find(i => !i.checked);
-    clearTimeout(toggleChecked.t);
     toggleChecked.t = setTimeout(() => {
-      if (!dlg.open || bigItem !== it) return;
+      if (!dlg.open || bigItem !== it || !it.checked) return;
       if (next) openBigMap(next);
       else { dlg.close(); $("step3").scrollIntoView({ behavior: smooth(), block: "start" }); }
     }, 450);
